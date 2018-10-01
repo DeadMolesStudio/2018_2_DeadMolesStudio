@@ -39,7 +39,7 @@
         ```
         ```json
         {
-            "user": "username",
+            "email": "email@email.com",
             "password": "password"
         }
         ```
@@ -101,7 +101,13 @@
         По ID
 
         ```http
-        GET /profile?id HTTP/1.1
+        GET /profile?id=32 HTTP/1.1
+        ```
+
+        По никнейму
+
+        ```http
+        GET /profile?nickname=Nick HTTP/1.1
         ```
 
         Без ID (из сессии)
@@ -112,13 +118,14 @@
 
         **Ответ:**
 
-        1. Пользователь с этим ID или этой сессией существует:
+        1. Пользователь с этим ID, этой сессией, никнеймом существует:
 
         ```http
         HTTP/1.1 200 OK
         ```
         ```json
         {
+            "id": 32,
             "nickname": "Nick",
             "email": "email@email.com",
             "record": 100500,
@@ -172,13 +179,16 @@
         {
             "error": [
                 {
-                    "nickname": "Nickname is already taken"
+                    "field": "nickname",
+                    "text": "Nickname is already taken",
                 },
                 {
-                    "email": "User with this email already exists"
-                }
+                    "field": "email",
+                    "text": "User with this email already exists",
+                },
                 {
-                    "password": "Password is too short"
+                    "field": "password",
+                    "text": "Password is too short",
                 },
             ]
         }
