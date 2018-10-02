@@ -6,6 +6,8 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+
+	"github.com/go-park-mail-ru/2018_2_DeadMolesStudio/models"
 )
 
 type TestCase struct {
@@ -22,23 +24,19 @@ type TestCase struct {
 
 func TestLoginFail(t *testing.T) {
 	cases := []TestCase{
-		TestCase{ // [0] invalid http method
-			RequestMethod: "GET",
-			StatusCode:    405,
-		},
-		TestCase{ // [1] empty body
+		TestCase{ // [0] empty body
 			RequestMethod: "POST",
 			StatusCode:    400,
 		},
-		TestCase{ // [2] wrong json format
+		TestCase{ // [1] wrong json format
 			RequestMethod: "POST",
 			RequestBody: `{
-				"user": "username"
+				"email": "username"
 				"password": "password"
 			}`,
 			StatusCode: 400,
 		},
-		TestCase{ // [3] wrong json format
+		TestCase{ // [2] wrong json format
 			RequestMethod: "POST",
 			RequestBody: `{
 				"abacaba": "bacbac",
@@ -46,17 +44,17 @@ func TestLoginFail(t *testing.T) {
 			}`,
 			StatusCode: 400,
 		},
-		TestCase{ // [4] pair <user & password> is incorrect
+		TestCase{ // [3] pair <user & password> is incorrect
 			RequestMethod: "POST",
 			RequestBody: `{
-				"user": "username",
-				"password": "password"
+				"email": "sdfadf",
+				"password": "asfdaf"
 			}`,
 			StatusCode: 403,
 		},
 	}
 
-	ts := httptest.NewServer(http.HandlerFunc(loginHandler))
+	ts := httptest.NewServer(http.HandlerFunc(sessionHandler))
 	defer ts.Close()
 
 	tsURL := ts.URL
@@ -64,7 +62,7 @@ func TestLoginFail(t *testing.T) {
 		req, _ := http.NewRequest(c.RequestMethod, tsURL, strings.NewReader(c.RequestBody))
 		w := httptest.NewRecorder()
 
-		loginHandler(w, req)
+		sessionHandler(w, req)
 
 		if w.Code != c.StatusCode {
 			t.Errorf("[%d] wrong StatusCode:\ngot: %d\nexpected: %d", i, w.Code, c.StatusCode)
@@ -81,11 +79,22 @@ func TestLoginFail(t *testing.T) {
 }
 
 func TestLoginLogout(t *testing.T) {
+	users = append(users, models.UserProfile{
+		UserPassword: models.UserPassword{
+			UserID:   1,
+			Email:    "test",
+			Password: "test",
+		},
+		Nickname: "tester",
+		Stats: models.Stats{
+			Record: 111,
+		},
+	})
 	c := []TestCase{
 		TestCase{ // login
 			RequestMethod: "POST",
 			RequestBody: `{
-			"user": "test",
+			"email": "test",
 			"password": "test"
 		}`,
 			StatusCode: 200,
@@ -93,18 +102,18 @@ func TestLoginLogout(t *testing.T) {
 		TestCase{ // login again
 			RequestMethod: "POST",
 			RequestBody: `{
-			"user": "test",
+			"email": "test",
 			"password": "test"
 		}`,
 			StatusCode: 200,
 		},
 		TestCase{ // logout
-			RequestMethod: "GET",
+			RequestMethod: "DELETE",
 			StatusCode:    200,
 		},
 	}
 
-	ts := httptest.NewServer(http.HandlerFunc(loginHandler))
+	ts := httptest.NewServer(http.HandlerFunc(sessionHandler))
 	defer ts.Close()
 
 	tsURL := ts.URL
@@ -113,7 +122,7 @@ func TestLoginLogout(t *testing.T) {
 	req, _ := http.NewRequest(c[0].RequestMethod, tsURL, strings.NewReader(c[0].RequestBody))
 	w := httptest.NewRecorder()
 
-	loginHandler(w, req)
+	sessionHandler(w, req)
 
 	if w.Code != c[0].StatusCode {
 		t.Errorf("login-logout case: wrong StatusCode:\ngot: %d\nexpected: %d", w.Code, c[0].StatusCode)
@@ -135,20 +144,20 @@ func TestLoginLogout(t *testing.T) {
 	req.Header.Set("Cookie", sessionCookie[0])
 	w = httptest.NewRecorder()
 
-	loginHandler(w, req)
+	sessionHandler(w, req)
 
 	if w.Code != c[1].StatusCode {
 		t.Errorf("login-logout case: wrong Response from repeated login:\ngot: %d\nexpected: %d", w.Code, c[1].StatusCode)
 	}
 
 	// logout
-	tslogout := httptest.NewServer(http.HandlerFunc(logoutHandler))
+	tslogout := httptest.NewServer(http.HandlerFunc(sessionHandler))
 
 	req, _ = http.NewRequest(c[0].RequestMethod, tslogout.URL, strings.NewReader(c[0].RequestBody))
 	req.Header.Set("Cookie", sessionCookie[0])
 	w = httptest.NewRecorder()
 
-	logoutHandler(w, req)
+	sessionHandler(w, req)
 
 	if w.Code != c[2].StatusCode {
 		t.Errorf("login-logout case: wrong Response from repeated login:\ngot: %d\nexpected: %d", w.Code, c[1].StatusCode)
@@ -170,7 +179,7 @@ func TestLogoutWhenAlreadyLoggedOut(t *testing.T) {
 		},
 	}
 
-	ts := httptest.NewServer(http.HandlerFunc(loginHandler))
+	ts := httptest.NewServer(http.HandlerFunc(sessionHandler))
 	defer ts.Close()
 
 	tsURL := ts.URL
@@ -178,7 +187,7 @@ func TestLogoutWhenAlreadyLoggedOut(t *testing.T) {
 		req, _ := http.NewRequest(c.RequestMethod, tsURL, strings.NewReader(c.RequestBody))
 		w := httptest.NewRecorder()
 
-		logoutHandler(w, req)
+		sessionHandler(w, req)
 
 		if w.Code != c.StatusCode {
 			t.Errorf("[%d] wrong StatusCode:\ngot: %d\nexpected: %d", i, w.Code, c.StatusCode)
