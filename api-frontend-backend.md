@@ -32,6 +32,12 @@
             HTTP/1.1 401 Unauthorized
             ```
 
+        3. Если ошибка в бд:
+
+            ```http
+            HTTP/1.1 500 Internal Server Error
+            ```
+
     2. **POST**: создать сессию (залогинить пользователя)
 
         ```http
@@ -69,6 +75,12 @@
 
             ```http
             HTTP/1.1 200 OK
+            ```
+
+        5. Если ошибка в бд:
+
+            ```http
+            HTTP/1.1 500 Internal Server Error
             ```
 
     3. **DELETE**: разлогинить пользователя
@@ -120,32 +132,38 @@
 
         1. Пользователь с этим ID, этой сессией, никнеймом существует:
 
-        ```http
-        HTTP/1.1 200 OK
-        ```
-        ```json
-        {
-            "id": 32,
-            "nickname": "Nick",
-            "email": "email@email.com",
-            "record": 100500,
-            "win": 21,
-            "draws": 2,
-            "loss": 15
-        }
-        ```
+            ```http
+            HTTP/1.1 200 OK
+            ```
+            ```json
+            {
+                "id": 32,
+                "nickname": "Nick",
+                "email": "email@email.com",
+                "record": 100500,
+                "win": 21,
+                "draws": 2,
+                "loss": 15
+            }
+            ```
 
         2. Не найдено:
 
-        ```http
-        HTTP/1.1 404 Not Found
-        ```
+            ```http
+            HTTP/1.1 404 Not Found
+            ```
 
         3. Неправильный запрос
 
-        ```http
-        HTTP/1.1 400 Bad Request
-        ```
+            ```http
+            HTTP/1.1 400 Bad Request
+            ```
+
+        4. Если ошибка в бд:
+
+            ```http
+            HTTP/1.1 500 Internal Server Error
+            ```
 
     2. **POST**: создать пользователя
 
@@ -219,6 +237,12 @@
         HTTP/1.1 422 Unprocessable Entity
         ```
 
+        Если ошибка в бд:
+
+        ```http
+        HTTP/1.1 500 Internal Server Error
+        ```
+
     3. **PUT**: изменить пользователя
 
         Часть параметров или все:
@@ -254,6 +278,12 @@
         HTTP/1.1 401 Unauthorized
         ```
 
+        Если ошибка в бд:
+
+        ```http
+        HTTP/1.1 500 Internal Server Error
+        ```
+
         Занята почта или ник, пароль не удовлетворяет правилам безопасности, другие ошибки:
 
         См. **POST** одноименный пункт
@@ -270,26 +300,36 @@
 
     **Ответ:**
 
-    ```http
-    HTTP/1.1 200 OK
-    ```
-    ```json
-    {
-        "players": [
-            {
-                "id": 143,
-                "nickname": "Nick",
-                "record": 100500
-            },
-            // 8 more...
-            {
-                "id": 34,
-                "nickname": "LuckyBoy",
-                "record": 100000,
-            },
-        ]
-    }
-    ```
+    1. Успех:
+
+        ```http
+        HTTP/1.1 200 OK
+        ```
+        ```json
+        {
+            "players": [
+                {
+                    "id": 143,
+                    "nickname": "Nick",
+                    "record": 100500
+                },
+                // 8 more...
+                {
+                    "id": 34,
+                    "nickname": "LuckyBoy",
+                    "record": 100000,
+                },
+            ]
+        }
+        ```
+
+        или `null`, если пользователей нет.
+
+    2. Если ошибка в бд:
+
+        ```http
+        HTTP/1.1 500 Internal Server Error
+        ```
 
 P.S. Ни один из методов (**GET**, **POST**, **PUT**, **DELETE**)
 
