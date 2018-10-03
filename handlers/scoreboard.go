@@ -12,30 +12,6 @@ import (
 func ScoreboardHandler(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
-		// TODO: LIMIT, OFFSET from Query
-		// q := r.URL.Query()
-		// limit, limitOK := q["limit"]
-		// limitValue := 0
-		// if limitOK {
-		// 	var err error
-		// 	limitValue, err = strconv.Atoi(limit[0])
-		// 	if err != nil {
-		// 		w.WriteHeader(http.StatusBadRequest)
-		// 		return
-		// 	}
-		// }
-
-		// offset, offsetOK := q["offset"]
-		// offsetValue := 0
-		// if offsetOK {
-		// 	var err error
-		// 	offsetValue, err = strconv.Atoi(offset[0])
-		// 	if err != nil {
-		// 		w.WriteHeader(http.StatusBadRequest)
-		// 		return
-		// 	}
-		// }
-
 		records, err := database.GetUserPositionsDescending()
 		if err != nil {
 			log.Println(err)

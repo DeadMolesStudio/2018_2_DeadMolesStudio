@@ -49,10 +49,9 @@ func loginUser(w http.ResponseWriter, userID int) error {
 	}
 
 	cookie := http.Cookie{
-		Name:    "session_id",
-		Value:   sessionID,
-		Expires: time.Now().Add(30 * 24 * time.Hour),
-		// Secure:  true,
+		Name:     "session_id",
+		Value:    sessionID,
+		Expires:  time.Now().Add(30 * 24 * time.Hour),
 		HttpOnly: true,
 	}
 	http.SetCookie(w, &cookie)
@@ -114,7 +113,7 @@ func SessionHandler(w http.ResponseWriter, r *http.Request) {
 
 		dbResponse, err := database.GetUserPassword(u.Email)
 
-		if err != nil { // TODO: db request fail
+		if err != nil {
 			w.WriteHeader(http.StatusUnprocessableEntity)
 			return
 		}

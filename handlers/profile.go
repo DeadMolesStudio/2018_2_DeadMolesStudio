@@ -144,7 +144,6 @@ func ProfileHandler(w http.ResponseWriter, r *http.Request) {
 		q := r.URL.Query()
 		id, idOK := q["id"]
 		nickname, nicknameOK := q["nickname"]
-		// publicProfile := &models.Profile{}
 
 		if idOK {
 			intID, err := strconv.Atoi(id[0])
@@ -153,7 +152,7 @@ func ProfileHandler(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 			profile, err := database.GetUserProfileByID(intID)
-			if err != nil { // TODO: db err
+			if err != nil {
 				w.WriteHeader(http.StatusNotFound)
 				return
 			}
@@ -169,7 +168,7 @@ func ProfileHandler(w http.ResponseWriter, r *http.Request) {
 			fmt.Fprintln(w, string(json))
 		} else if nicknameOK {
 			profile, err := database.GetUserProfileByNickname(nickname[0])
-			if err != nil { // TODO: db err
+			if err != nil {
 				w.WriteHeader(http.StatusNotFound)
 				return
 			}
@@ -190,7 +189,7 @@ func ProfileHandler(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 			profile, err := database.GetUserProfileByID(searchID)
-			if err != nil { //TODO: db err
+			if err != nil {
 				w.WriteHeader(http.StatusNotFound)
 				return
 			}
