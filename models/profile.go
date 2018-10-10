@@ -23,3 +23,12 @@ type ProfileError struct {
 	Field string `json:"field"`
 	Text  string `json:"text"`
 }
+
+type ProfileErrorList struct {
+	Errors []ProfileError `json:"error"`
+}
+
+type RequestProfile struct {
+	ID       int
+	Nickname string
+}

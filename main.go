@@ -14,7 +14,7 @@ func middlewareCORS(next http.HandlerFunc) http.HandlerFunc {
 		w.Header().Set("Access-Control-Allow-Credentials", "true")
 		w.Header().Set("Access-Control-Max-Age", "86400")
 		w.Header().Set("Access-Control-Allow-Headers",
-			"Content-Type, User-Agent, Cache-Control, Accept, X-Requested-With, If-Modified-Since")
+			"Content-Type, User-Agent, Cache-Control, Accept, X-Requested-With, If-Modified-Since, Origin")
 		next.ServeHTTP(w, r)
 	})
 }

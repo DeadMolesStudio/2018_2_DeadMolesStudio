@@ -1,3 +1,10 @@
 package models
 
-type Session map[string]int
+import (
+	"sync"
+)
+
+type Sessions struct {
+	sync.Mutex
+	Sessions map[string]int
+}

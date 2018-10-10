@@ -7,7 +7,7 @@ import (
 )
 
 var users []models.Profile
-var nextID = 0
+var nextID = 1
 
 func GetUserPassword(e string) (models.UserPassword, error) {
 	for _, v := range users {
@@ -49,6 +49,7 @@ func UpdateUserByID(id int, u *models.Profile) error {
 func GetUserProfileByID(id int) (models.Profile, error) {
 	for _, v := range users {
 		if id == v.UserID {
+			v.Password = ""
 			return v, nil
 		}
 	}
@@ -59,6 +60,7 @@ func GetUserProfileByID(id int) (models.Profile, error) {
 func GetUserProfileByNickname(nickname string) (models.Profile, error) {
 	for _, v := range users {
 		if nickname == v.Nickname {
+			v.Password = ""
 			return v, nil
 		}
 	}

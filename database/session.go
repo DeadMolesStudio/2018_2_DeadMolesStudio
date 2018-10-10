@@ -6,22 +6,30 @@ import (
 	"github.com/go-park-mail-ru/2018_2_DeadMolesStudio/models"
 )
 
-var sessions = make(models.Session)
+var sessions = models.Sessions{
+	Sessions: make(map[string]int),
+}
 
 func CreateNewSession(sessionID string, userID int) error {
-	sessions[sessionID] = userID
+	sessions.Lock()
+	sessions.Sessions[sessionID] = userID
+	sessions.Unlock()
 
 	return nil
 }
 
 func DeleteSession(sessionID string) error {
-	delete(sessions, sessionID)
+	sessions.Lock()
+	delete(sessions.Sessions, sessionID)
+	sessions.Unlock()
 
 	return nil
 }
 
 func GetIDFromSession(sessionID string) (int, error) {
-	id, ok := sessions[sessionID]
+	sessions.Lock()
+	id, ok := sessions.Sessions[sessionID]
+	sessions.Unlock()
 	if !ok {
 		return -1, fmt.Errorf("no session in database")
 	}
@@ -30,7 +38,9 @@ func GetIDFromSession(sessionID string) (int, error) {
 }
 
 func CheckExistenceOfSession(sessionID string) (bool, error) {
-	_, ok := sessions[sessionID]
+	sessions.Lock()
+	_, ok := sessions.Sessions[sessionID]
+	sessions.Unlock()
 	if !ok {
 		return false, nil
 	}

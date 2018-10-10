@@ -52,6 +52,7 @@ func loginUser(w http.ResponseWriter, userID int) error {
 		Name:     "session_id",
 		Value:    sessionID,
 		Expires:  time.Now().Add(30 * 24 * time.Hour),
+		Secure:   true,
 		HttpOnly: true,
 	}
 	http.SetCookie(w, &cookie)

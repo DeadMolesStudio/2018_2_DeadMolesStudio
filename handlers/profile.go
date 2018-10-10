@@ -6,7 +6,6 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
-	"strconv"
 	"strings"
 	"unicode/utf8"
 
@@ -21,7 +20,7 @@ func cleanLoginInfo(r *http.Request, u *models.UserPassword) error {
 		return err
 	}
 
-	err = json.Unmarshal(body, &u)
+	err = json.Unmarshal(body, u)
 	if err != nil {
 		return fmt.Errorf("json error")
 	}
@@ -36,7 +35,7 @@ func cleanProfile(r *http.Request, p *models.Profile) error {
 		return err
 	}
 
-	err = json.Unmarshal(body, &p)
+	err = json.Unmarshal(body, p)
 	if err != nil {
 		return fmt.Errorf("json error")
 	}
@@ -141,22 +140,18 @@ func validateFields(u *models.Profile) ([]models.ProfileError, error) {
 func ProfileHandler(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
-		q := r.URL.Query()
-		id, idOK := q["id"]
-		nickname, nicknameOK := q["nickname"]
-
-		if idOK {
-			intID, err := strconv.Atoi(id[0])
-			if err != nil {
-				w.WriteHeader(http.StatusBadRequest)
-				return
-			}
-			profile, err := database.GetUserProfileByID(intID)
+		params := &models.RequestProfile{}
+		err := decoder.Decode(params, r.URL.Query())
+		if err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		if params.ID != 0 {
+			profile, err := database.GetUserProfileByID(params.ID)
 			if err != nil {
 				w.WriteHeader(http.StatusNotFound)
 				return
 			}
-			profile.Password = ""
 
 			w.Header().Set("Content-Type", "application/json")
 			json, err := json.Marshal(profile)
@@ -166,13 +161,12 @@ func ProfileHandler(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 			fmt.Fprintln(w, string(json))
-		} else if nicknameOK {
-			profile, err := database.GetUserProfileByNickname(nickname[0])
+		} else if params.Nickname != "" {
+			profile, err := database.GetUserProfileByNickname(params.Nickname)
 			if err != nil {
 				w.WriteHeader(http.StatusNotFound)
 				return
 			}
-			profile.Password = ""
 
 			w.Header().Set("Content-Type", "application/json")
 			json, err := json.Marshal(profile)
@@ -193,7 +187,6 @@ func ProfileHandler(w http.ResponseWriter, r *http.Request) {
 				w.WriteHeader(http.StatusNotFound)
 				return
 			}
-			profile.Password = ""
 
 			w.Header().Set("Content-Type", "application/json")
 			json, err := json.Marshal(profile)
@@ -224,8 +217,9 @@ func ProfileHandler(w http.ResponseWriter, r *http.Request) {
 		}
 
 		if len(fieldErrors) != 0 {
-			errorsList := make(map[string][]models.ProfileError)
-			errorsList["error"] = fieldErrors
+			errorsList := models.ProfileErrorList{
+				Errors: fieldErrors,
+			}
 			json, err := json.Marshal(errorsList)
 			if err != nil {
 				log.Println(err)
