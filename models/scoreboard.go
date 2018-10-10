@@ -5,3 +5,13 @@ type Position struct {
 	Nickname string `json:"nickname"`
 	Points   int    `json:"record"`
 }
+
+type PositionList struct {
+	List  []Position `json:"players"`
+	Total int        `json:"total"`
+}
+
+type FetchScoreboardPage struct {
+	Limit int
+	Page  int
+}

@@ -2,7 +2,6 @@ package database
 
 import (
 	"fmt"
-	"sort"
 
 	"github.com/go-park-mail-ru/2018_2_DeadMolesStudio/models"
 )
@@ -85,21 +84,4 @@ func CheckExistenceOfNickname(n string) (bool, error) {
 	}
 
 	return false, nil
-}
-
-func GetUserPositionsDescending() ([]models.Position, error) {
-	var records []models.Position
-	for _, v := range users {
-		records = append(records, models.Position{
-			ID:       v.UserID,
-			Nickname: v.Nickname,
-			Points:   v.Record,
-		})
-	}
-
-	sort.Slice(records, func(i, j int) bool {
-		return records[i].Points > records[j].Points
-	})
-
-	return records, nil
 }

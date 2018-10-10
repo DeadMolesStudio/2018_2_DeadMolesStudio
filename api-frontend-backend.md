@@ -295,7 +295,7 @@
     **GET**: получить табличку или ее часть (limit, offset), в примере, 10 игроков, начиная с 11 места (11-20)
 
     ```http
-    GET /scoreboard?limit=10&offset=11 HTTP/1.1
+    GET /scoreboard?limit=10&page=1 HTTP/1.1
     ```
 
     **Ответ:**
@@ -319,11 +319,22 @@
                     "nickname": "LuckyBoy",
                     "record": 100000,
                 },
-            ]
+            ],
+            "total": 42
         }
         ```
 
-        или `null`, если пользователей нет.
+        или
+        ```http
+        HTTP/1.1 200 OK
+        ```
+        ```json
+        {
+            "players": [],
+            "total": 42
+        }
+        ```
+        если пользователей нет.
 
     2. Если ошибка в бд:
 
