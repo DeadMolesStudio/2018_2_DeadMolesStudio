@@ -1,8 +1,6 @@
 package database
 
 import (
-	"fmt"
-
 	"github.com/go-park-mail-ru/2018_2_DeadMolesStudio/models"
 )
 
@@ -16,7 +14,7 @@ func GetUserPassword(e string) (models.UserPassword, error) {
 		}
 	}
 
-	return models.UserPassword{}, fmt.Errorf("no user with this email found")
+	return models.UserPassword{}, UserNotFoundError{"email"}
 }
 
 func CreateNewUser(u *models.Profile) error {
@@ -43,7 +41,7 @@ func UpdateUserByID(id int, u *models.Profile) error {
 		}
 	}
 
-	return nil
+	return UserNotFoundError{"id"}
 }
 
 func GetUserProfileByID(id int) (models.Profile, error) {
@@ -54,7 +52,7 @@ func GetUserProfileByID(id int) (models.Profile, error) {
 		}
 	}
 
-	return models.Profile{}, fmt.Errorf("no user with this id found")
+	return models.Profile{}, UserNotFoundError{"id"}
 }
 
 func GetUserProfileByNickname(nickname string) (models.Profile, error) {
@@ -65,7 +63,7 @@ func GetUserProfileByNickname(nickname string) (models.Profile, error) {
 		}
 	}
 
-	return models.Profile{}, fmt.Errorf("no user with this id found")
+	return models.Profile{}, UserNotFoundError{"nickname"}
 }
 
 func CheckExistenceOfEmail(e string) (bool, error) {

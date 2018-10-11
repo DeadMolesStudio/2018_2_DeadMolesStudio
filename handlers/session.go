@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"time"
@@ -13,6 +14,21 @@ import (
 	"github.com/go-park-mail-ru/2018_2_DeadMolesStudio/database"
 	"github.com/go-park-mail-ru/2018_2_DeadMolesStudio/models"
 )
+
+func cleanLoginInfo(r *http.Request, u *models.UserPassword) error {
+	body, err := ioutil.ReadAll(r.Body)
+	defer r.Body.Close()
+	if err != nil {
+		return err
+	}
+
+	err = json.Unmarshal(body, u)
+	if err != nil {
+		return ParseJSONError{err}
+	}
+
+	return nil
+}
 
 func generateSessionID() (id string, err error) {
 	b := make([]byte, 32)
@@ -101,21 +117,30 @@ func SessionHandler(w http.ResponseWriter, r *http.Request) {
 
 		u := &models.UserPassword{}
 		err = cleanLoginInfo(r, u)
-		if invalid := u.Email == "" || u.Password == ""; err != nil || invalid {
-			if invalid || err.Error() == "json error" {
+		if err != nil {
+			switch err.(type) {
+			case ParseJSONError:
 				w.WriteHeader(http.StatusBadRequest)
-				return
+			default:
+				log.Println(err, "in sessionHandler in getUserFromRequestBody")
+				w.WriteHeader(http.StatusInternalServerError)
 			}
-
-			log.Println(err, "in sessionHandler in getUserFromRequestBody")
-			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		if u.Email == "" || u.Password == "" {
+			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
 
 		dbResponse, err := database.GetUserPassword(u.Email)
 
 		if err != nil {
-			w.WriteHeader(http.StatusUnprocessableEntity)
+			switch err.(type) {
+			case database.UserNotFoundError:
+				w.WriteHeader(http.StatusUnprocessableEntity)
+			default:
+				w.WriteHeader(http.StatusInternalServerError)
+			}
 			return
 		}
 		if u.Email == dbResponse.Email && u.Password == dbResponse.Password {

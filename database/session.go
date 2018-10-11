@@ -1,8 +1,6 @@
 package database
 
 import (
-	"fmt"
-
 	"github.com/go-park-mail-ru/2018_2_DeadMolesStudio/models"
 )
 
@@ -31,7 +29,7 @@ func GetIDFromSession(sessionID string) (int, error) {
 	id, ok := sessions.Sessions[sessionID]
 	sessions.Unlock()
 	if !ok {
-		return -1, fmt.Errorf("no session in database")
+		return -1, ErrSessionNotFound
 	}
 
 	return id, nil

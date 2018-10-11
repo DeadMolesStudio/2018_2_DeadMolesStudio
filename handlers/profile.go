@@ -13,21 +13,6 @@ import (
 	"github.com/go-park-mail-ru/2018_2_DeadMolesStudio/models"
 )
 
-func cleanLoginInfo(r *http.Request, u *models.UserPassword) error {
-	body, err := ioutil.ReadAll(r.Body)
-	defer r.Body.Close()
-	if err != nil {
-		return err
-	}
-
-	err = json.Unmarshal(body, u)
-	if err != nil {
-		return fmt.Errorf("json error")
-	}
-
-	return nil
-}
-
 func cleanProfile(r *http.Request, p *models.Profile) error {
 	body, err := ioutil.ReadAll(r.Body)
 	defer r.Body.Close()
@@ -37,7 +22,7 @@ func cleanProfile(r *http.Request, p *models.Profile) error {
 
 	err = json.Unmarshal(body, p)
 	if err != nil {
-		return fmt.Errorf("json error")
+		return ParseJSONError{err}
 	}
 
 	return nil
@@ -107,8 +92,7 @@ func validatePassword(s string) []models.ProfileError {
 			Field: "password",
 			Text:  "Пароль должен быть не менее 8 символов",
 		})
-	}
-	if utf8.RuneCountInString(s) > 32 {
+	} else if utf8.RuneCountInString(s) > 32 {
 		errors = append(errors, models.ProfileError{
 			Field: "password",
 			Text:  "Пароль должен быть не более 32 символов",
@@ -132,7 +116,7 @@ func validateFields(u *models.Profile) ([]models.ProfileError, error) {
 		return []models.ProfileError{}, dbErr
 	}
 	errors = append(errors, valErrors...)
-	errors = append(errors, validatePassword(u.Email)...)
+	errors = append(errors, validatePassword(u.Password)...)
 
 	return errors, nil
 }
@@ -149,8 +133,15 @@ func ProfileHandler(w http.ResponseWriter, r *http.Request) {
 		if params.ID != 0 {
 			profile, err := database.GetUserProfileByID(params.ID)
 			if err != nil {
-				w.WriteHeader(http.StatusNotFound)
-				return
+				switch err.(type) {
+				case database.UserNotFoundError:
+					w.WriteHeader(http.StatusNotFound)
+					return
+				default:
+					log.Println(err)
+					w.WriteHeader(http.StatusInternalServerError)
+					return
+				}
 			}
 
 			w.Header().Set("Content-Type", "application/json")
@@ -164,8 +155,15 @@ func ProfileHandler(w http.ResponseWriter, r *http.Request) {
 		} else if params.Nickname != "" {
 			profile, err := database.GetUserProfileByNickname(params.Nickname)
 			if err != nil {
-				w.WriteHeader(http.StatusNotFound)
-				return
+				switch err.(type) {
+				case database.UserNotFoundError:
+					w.WriteHeader(http.StatusNotFound)
+					return
+				default:
+					log.Println(err)
+					w.WriteHeader(http.StatusInternalServerError)
+					return
+				}
 			}
 
 			w.Header().Set("Content-Type", "application/json")
@@ -179,13 +177,25 @@ func ProfileHandler(w http.ResponseWriter, r *http.Request) {
 		} else {
 			searchID, err := getUserIDFromSessionID(r)
 			if err != nil {
-				w.WriteHeader(http.StatusUnauthorized)
+				if err == database.ErrSessionNotFound {
+					w.WriteHeader(http.StatusUnauthorized)
+					return
+				}
+				log.Println(err)
+				w.WriteHeader(http.StatusInternalServerError)
 				return
 			}
 			profile, err := database.GetUserProfileByID(searchID)
 			if err != nil {
-				w.WriteHeader(http.StatusNotFound)
-				return
+				switch err.(type) {
+				case database.UserNotFoundError:
+					w.WriteHeader(http.StatusNotFound)
+					return
+				default:
+					log.Println(err)
+					w.WriteHeader(http.StatusInternalServerError)
+					return
+				}
 			}
 
 			w.Header().Set("Content-Type", "application/json")
@@ -201,7 +211,12 @@ func ProfileHandler(w http.ResponseWriter, r *http.Request) {
 		u := &models.Profile{}
 		err := cleanProfile(r, u)
 		if err != nil {
-			w.WriteHeader(http.StatusBadRequest)
+			switch err.(type) {
+			case ParseJSONError:
+				w.WriteHeader(http.StatusBadRequest)
+			default:
+				w.WriteHeader(http.StatusInternalServerError)
+			}
 			return
 		}
 
@@ -249,14 +264,23 @@ func ProfileHandler(w http.ResponseWriter, r *http.Request) {
 	case http.MethodPut:
 		id, err := getUserIDFromSessionID(r)
 		if err != nil {
-			w.WriteHeader(http.StatusUnauthorized)
+			if err == database.ErrSessionNotFound {
+				w.WriteHeader(http.StatusUnauthorized)
+				return
+			}
+			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
 
 		u := &models.Profile{}
 		err = cleanProfile(r, u)
 		if err != nil {
-			w.WriteHeader(http.StatusBadRequest)
+			switch err.(type) {
+			case ParseJSONError:
+				w.WriteHeader(http.StatusBadRequest)
+			default:
+				w.WriteHeader(http.StatusInternalServerError)
+			}
 			return
 		}
 
@@ -300,8 +324,14 @@ func ProfileHandler(w http.ResponseWriter, r *http.Request) {
 		} else {
 			err := database.UpdateUserByID(id, u)
 			if err != nil {
-				log.Println(err)
-				w.WriteHeader(http.StatusInternalServerError)
+				switch err.(type) {
+				case database.UserNotFoundError:
+					w.WriteHeader(http.StatusNotFound)
+				default:
+					log.Println(err)
+					w.WriteHeader(http.StatusInternalServerError)
+				}
+				return
 			}
 			log.Println("User with id", id, "changed to", u.Nickname, u.Email)
 		}
