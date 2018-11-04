@@ -5,9 +5,10 @@ COPY . .
 
 RUN apk add --no-cache --virtual .build-deps \
 		git
-RUN CGO_ENABLED=0 go build -o dmstudio-server
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 \ 
+	go build -a -installsuffix cgo -ldflags="-w -s" -o dmstudio-server
 
-FROM alpine:latest
+FROM scratch
 
 WORKDIR /app
 COPY --from=builder /src/dmstudio-server .
