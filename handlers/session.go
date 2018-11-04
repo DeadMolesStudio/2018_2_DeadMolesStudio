@@ -1,15 +1,14 @@
 package handlers
 
 import (
-	"crypto/rand"
-	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"time"
+
+	"github.com/satori/go.uuid"
 
 	"github.com/go-park-mail-ru/2018_2_DeadMolesStudio/database"
 	"github.com/go-park-mail-ru/2018_2_DeadMolesStudio/models"
@@ -30,24 +29,11 @@ func cleanLoginInfo(r *http.Request, u *models.UserPassword) error {
 	return nil
 }
 
-func generateSessionID() (id string, err error) {
-	b := make([]byte, 32)
-	if _, err = io.ReadFull(rand.Reader, b); err != nil {
-		return
-	}
-	id = base64.URLEncoding.EncodeToString(b)
-	return
-}
-
 func loginUser(w http.ResponseWriter, userID int) error {
 	sessionID := ""
 	for {
 		var err error
-		sessionID, err = generateSessionID()
-		if err != nil {
-			log.Println(err)
-			return err
-		}
+		sessionID = uuid.NewV4().String()
 		exists, err := database.CheckExistenceOfSession(sessionID)
 		if err != nil {
 			log.Println(err)
