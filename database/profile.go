@@ -7,14 +7,14 @@ import (
 var users []models.Profile
 var nextID = 1
 
-func GetUserPassword(e string) (models.UserPassword, error) {
+func GetUserPassword(e string) (models.User, error) {
 	for _, v := range users {
 		if e == v.Email {
-			return v.UserPassword, nil
+			return v.User, nil
 		}
 	}
 
-	return models.UserPassword{}, UserNotFoundError{"email"}
+	return models.User{}, UserNotFoundError{"email"}
 }
 
 func CreateNewUser(u *models.Profile) error {

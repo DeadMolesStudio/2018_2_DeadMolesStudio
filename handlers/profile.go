@@ -124,221 +124,267 @@ func validateFields(u *models.Profile) ([]models.ProfileError, error) {
 func ProfileHandler(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
-		params := &models.RequestProfile{}
-		err := decoder.Decode(params, r.URL.Query())
+		getProfile(w, r)
+	case http.MethodPost:
+		postProfile(w, r)
+	case http.MethodPut:
+		putProfile(w, r)
+	case http.MethodOptions:
+		return
+	default:
+		w.WriteHeader(http.StatusMethodNotAllowed)
+	}
+}
+
+// @Title Получить профиль
+// @Summary Получить профиль пользователя по ID, email или из сессии
+// @ID get-profile
+// @Produce json
+// @Param id query int false "ID"
+// @Param nickname query string false "Никнейм"
+// @Success 200 {object} models.Profile "Пользователь найден, успешно"
+// @Failure 400 "Неправильный запрос"
+// @Failure 401 "Не залогинен"
+// @Failure 404 "Не найдено"
+// @Failure 500 "Ошибка в бд"
+// @Router /profile [GET]
+func getProfile(w http.ResponseWriter, r *http.Request) {
+	params := &models.RequestProfile{}
+	err := decoder.Decode(params, r.URL.Query())
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	if params.ID != 0 {
+		profile, err := database.GetUserProfileByID(params.ID)
 		if err != nil {
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
-		if params.ID != 0 {
-			profile, err := database.GetUserProfileByID(params.ID)
-			if err != nil {
-				switch err.(type) {
-				case database.UserNotFoundError:
-					w.WriteHeader(http.StatusNotFound)
-					return
-				default:
-					log.Println(err)
-					w.WriteHeader(http.StatusInternalServerError)
-					return
-				}
-			}
-
-			w.Header().Set("Content-Type", "application/json")
-			json, err := json.Marshal(profile)
-			if err != nil {
-				log.Println(err, "in profileMethod")
-				w.WriteHeader(http.StatusInternalServerError)
+			switch err.(type) {
+			case database.UserNotFoundError:
+				w.WriteHeader(http.StatusNotFound)
 				return
-			}
-			fmt.Fprintln(w, string(json))
-		} else if params.Nickname != "" {
-			profile, err := database.GetUserProfileByNickname(params.Nickname)
-			if err != nil {
-				switch err.(type) {
-				case database.UserNotFoundError:
-					w.WriteHeader(http.StatusNotFound)
-					return
-				default:
-					log.Println(err)
-					w.WriteHeader(http.StatusInternalServerError)
-					return
-				}
-			}
-
-			w.Header().Set("Content-Type", "application/json")
-			json, err := json.Marshal(profile)
-			if err != nil {
-				log.Println(err, "in profileMethod")
-				w.WriteHeader(http.StatusInternalServerError)
-				return
-			}
-			fmt.Fprintln(w, string(json))
-		} else {
-			searchID, err := getUserIDFromSessionID(r)
-			if err != nil {
-				if err == database.ErrSessionNotFound {
-					w.WriteHeader(http.StatusUnauthorized)
-					return
-				}
+			default:
 				log.Println(err)
 				w.WriteHeader(http.StatusInternalServerError)
 				return
 			}
-			profile, err := database.GetUserProfileByID(searchID)
-			if err != nil {
-				switch err.(type) {
-				case database.UserNotFoundError:
-					w.WriteHeader(http.StatusNotFound)
-					return
-				default:
-					log.Println(err)
-					w.WriteHeader(http.StatusInternalServerError)
-					return
-				}
-			}
-
-			w.Header().Set("Content-Type", "application/json")
-			json, err := json.Marshal(profile)
-			if err != nil {
-				log.Println(err, "in profileMethod")
-				w.WriteHeader(http.StatusInternalServerError)
-				return
-			}
-			fmt.Fprintln(w, string(json))
 		}
-	case http.MethodPost:
-		u := &models.Profile{}
-		err := cleanProfile(r, u)
+
+		w.Header().Set("Content-Type", "application/json")
+		json, err := json.Marshal(profile)
 		if err != nil {
-			switch err.(type) {
-			case ParseJSONError:
-				w.WriteHeader(http.StatusBadRequest)
-			default:
-				w.WriteHeader(http.StatusInternalServerError)
-			}
-			return
-		}
-
-		if u.Nickname == "" || u.Email == "" || u.Password == "" {
-			w.WriteHeader(http.StatusUnprocessableEntity)
-			return
-		}
-
-		fieldErrors, err := validateFields(u)
-		if err != nil {
+			log.Println(err, "in profileMethod")
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
-
-		if len(fieldErrors) != 0 {
-			errorsList := models.ProfileErrorList{
-				Errors: fieldErrors,
-			}
-			json, err := json.Marshal(errorsList)
-			if err != nil {
+		fmt.Fprintln(w, string(json))
+	} else if params.Nickname != "" {
+		profile, err := database.GetUserProfileByNickname(params.Nickname)
+		if err != nil {
+			switch err.(type) {
+			case database.UserNotFoundError:
+				w.WriteHeader(http.StatusNotFound)
+				return
+			default:
 				log.Println(err)
 				w.WriteHeader(http.StatusInternalServerError)
 				return
 			}
-
-			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusForbidden)
-			fmt.Fprintln(w, string(json))
-		} else {
-			err := database.CreateNewUser(u)
-			if err != nil {
-				log.Println(err)
-				w.WriteHeader(http.StatusInternalServerError)
-				return
-			}
-
-			err = loginUser(w, u.UserID)
-			if err != nil {
-				w.WriteHeader(http.StatusInternalServerError)
-				return
-			}
-			log.Println("New user logged in:", u.UserID, u.Email, u.Nickname)
 		}
 
-	case http.MethodPut:
-		id, err := getUserIDFromSessionID(r)
+		w.Header().Set("Content-Type", "application/json")
+		json, err := json.Marshal(profile)
+		if err != nil {
+			log.Println(err, "in profileMethod")
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		fmt.Fprintln(w, string(json))
+	} else {
+		searchID, err := getUserIDFromSessionID(r)
 		if err != nil {
 			if err == database.ErrSessionNotFound {
 				w.WriteHeader(http.StatusUnauthorized)
 				return
 			}
+			log.Println(err)
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
-
-		u := &models.Profile{}
-		err = cleanProfile(r, u)
+		profile, err := database.GetUserProfileByID(searchID)
 		if err != nil {
 			switch err.(type) {
-			case ParseJSONError:
-				w.WriteHeader(http.StatusBadRequest)
+			case database.UserNotFoundError:
+				w.WriteHeader(http.StatusNotFound)
+				return
 			default:
-				w.WriteHeader(http.StatusInternalServerError)
-			}
-			return
-		}
-
-		var fieldErrors []models.ProfileError
-
-		if u.Nickname != "" {
-			valErrors, dbErr := validateNickname(u.Nickname)
-			if dbErr != nil {
-				log.Println(dbErr)
-				w.WriteHeader(http.StatusInternalServerError)
-				return
-			}
-			fieldErrors = append(fieldErrors, valErrors...)
-		}
-		if u.Email != "" {
-			valErrors, dbErr := validateEmail(u.Email)
-			if dbErr != nil {
-				log.Println(dbErr)
-				w.WriteHeader(http.StatusInternalServerError)
-				return
-			}
-			fieldErrors = append(fieldErrors, valErrors...)
-		}
-		if u.Password != "" {
-			fieldErrors = append(fieldErrors, validatePassword(u.Password)...)
-		}
-
-		if len(fieldErrors) != 0 {
-			errorsList := make(map[string][]models.ProfileError)
-			errorsList["error"] = fieldErrors
-			json, err := json.Marshal(errorsList)
-			if err != nil {
 				log.Println(err)
 				w.WriteHeader(http.StatusInternalServerError)
 				return
 			}
-
-			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusForbidden)
-			fmt.Fprintln(w, string(json))
-		} else {
-			err := database.UpdateUserByID(id, u)
-			if err != nil {
-				switch err.(type) {
-				case database.UserNotFoundError:
-					w.WriteHeader(http.StatusNotFound)
-				default:
-					log.Println(err)
-					w.WriteHeader(http.StatusInternalServerError)
-				}
-				return
-			}
-			log.Println("User with id", id, "changed to", u.Nickname, u.Email)
 		}
-	case http.MethodOptions:
+
+		w.Header().Set("Content-Type", "application/json")
+		json, err := json.Marshal(profile)
+		if err != nil {
+			log.Println(err, "in profileMethod")
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		fmt.Fprintln(w, string(json))
+	}
+}
+
+// @Title Зарегистрироваться и залогиниться по новому профилю
+// @Summary Зарегистрировать по никнейму, почте и паролю и автоматически залогинить
+// @ID post-profile
+// @Accept json
+// @Produce json
+// @Param Profile body models.RegisterProfile true "Никнейм, почта и пароль"
+// @Success 200 "Пользователь зарегистрирован и залогинен успешно"
+// @Failure 400 "Неверный формат JSON"
+// @Failure 403 {object} models.ProfileErrorList "Занята почта или ник, пароль не удовлетворяет правилам безопасности, другие ошибки"
+// @Failure 422 "При регистрации не все параметры"
+// @Failure 500 "Ошибка в бд"
+// @Router /profile [POST]
+func postProfile(w http.ResponseWriter, r *http.Request) {
+	u := &models.Profile{}
+	err := cleanProfile(r, u)
+	if err != nil {
+		switch err.(type) {
+		case ParseJSONError:
+			w.WriteHeader(http.StatusBadRequest)
+		default:
+			w.WriteHeader(http.StatusInternalServerError)
+		}
 		return
-	default:
-		w.WriteHeader(http.StatusMethodNotAllowed)
+	}
+
+	if u.Nickname == "" || u.Email == "" || u.Password == "" {
+		w.WriteHeader(http.StatusUnprocessableEntity)
+		return
+	}
+
+	fieldErrors, err := validateFields(u)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	if len(fieldErrors) != 0 {
+		json, err := json.Marshal(models.ProfileErrorList{Errors: fieldErrors})
+		if err != nil {
+			log.Println(err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusForbidden)
+		fmt.Fprintln(w, string(json))
+	} else {
+		err := database.CreateNewUser(u)
+		if err != nil {
+			log.Println(err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		err = loginUser(w, u.UserID)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		log.Println("New user logged in:", u.UserID, u.Email, u.Nickname)
+	}
+}
+
+// @Title Изменить профиль
+// @Summary Изменить профиль, должен быть залогинен
+// @ID put-profile
+// @Accept json
+// @Produce json
+// @Param Profile body models.RegisterProfile true "Новые никнейм, и/или почта, и/или пароль"
+// @Success 200 "Пользователь найден, успешно изменены данные"
+// @Failure 400 "Неверный формат JSON"
+// @Failure 401 "Не залогинен"
+// @Failure 403 {object} models.ProfileErrorList "Занята почта или ник, пароль не удовлетворяет правилам безопасности, другие ошибки"
+// @Failure 500 "Ошибка в бд"
+// @Router /profile [PUT]
+func putProfile(w http.ResponseWriter, r *http.Request) {
+	id, err := getUserIDFromSessionID(r)
+	if err != nil {
+		if err == database.ErrSessionNotFound {
+			w.WriteHeader(http.StatusUnauthorized)
+			return
+		}
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	u := &models.Profile{}
+	err = cleanProfile(r, u)
+	if err != nil {
+		switch err.(type) {
+		case ParseJSONError:
+			w.WriteHeader(http.StatusBadRequest)
+		default:
+			w.WriteHeader(http.StatusInternalServerError)
+		}
+		return
+	}
+
+	if u.Nickname == "" && u.Email == "" && u.Password == "" {
+		return
+	}
+
+	var fieldErrors []models.ProfileError
+
+	if u.Nickname != "" {
+		valErrors, dbErr := validateNickname(u.Nickname)
+		if dbErr != nil {
+			log.Println(dbErr)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		fieldErrors = append(fieldErrors, valErrors...)
+	}
+	if u.Email != "" {
+		valErrors, dbErr := validateEmail(u.Email)
+		if dbErr != nil {
+			log.Println(dbErr)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		fieldErrors = append(fieldErrors, valErrors...)
+	}
+	if u.Password != "" {
+		fieldErrors = append(fieldErrors, validatePassword(u.Password)...)
+	}
+
+	if len(fieldErrors) != 0 {
+		json, err := json.Marshal(models.ProfileErrorList{Errors: fieldErrors})
+		if err != nil {
+			log.Println(err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusForbidden)
+		fmt.Fprintln(w, string(json))
+	} else {
+		err := database.UpdateUserByID(id, u)
+		if err != nil {
+			switch err.(type) {
+			case database.UserNotFoundError:
+				w.WriteHeader(http.StatusNotFound)
+			default:
+				log.Println(err)
+				w.WriteHeader(http.StatusInternalServerError)
+			}
+			return
+		}
+		log.Println("User with id", id, "changed to", u.Nickname, u.Email)
 	}
 }
 

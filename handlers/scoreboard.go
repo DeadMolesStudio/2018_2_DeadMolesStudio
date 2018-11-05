@@ -10,6 +10,15 @@ import (
 	"github.com/go-park-mail-ru/2018_2_DeadMolesStudio/models"
 )
 
+// @Title Получить таблицу лидеров
+// @Summary Получить таблицу лидеров (пагинация присутствует)
+// @ID get-scoreboard
+// @Produce json
+// @Param Limit query int false "Пользователей на страницу"
+// @Param Page query int false "Страница номер"
+// @Success 200 {object} models.PositionList "Таблицу лидеров или ее страница и общее количество"
+// @Failure 500 "Ошибка в бд"
+// @Router /scoreboard [GET]
 func ScoreboardHandler(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
