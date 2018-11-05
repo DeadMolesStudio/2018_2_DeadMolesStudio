@@ -11,10 +11,14 @@ import (
 )
 
 func main() {
-	http.HandleFunc("/session", handlers.CORSMiddleware(handlers.SessionHandler))
-	http.HandleFunc("/profile", handlers.CORSMiddleware(handlers.ProfileHandler))
-	http.HandleFunc("/profile/avatar", handlers.CORSMiddleware(handlers.AvatarHandler))
-	http.HandleFunc("/scoreboard", handlers.CORSMiddleware(handlers.ScoreboardHandler))
+	http.HandleFunc("/session", handlers.RecoverMiddleware(handlers.CORSMiddleware(
+		handlers.SessionMiddleware(handlers.SessionHandler))))
+	http.HandleFunc("/profile", handlers.RecoverMiddleware(handlers.CORSMiddleware(
+		handlers.SessionMiddleware(handlers.ProfileHandler))))
+	http.HandleFunc("/profile/avatar", handlers.RecoverMiddleware(handlers.CORSMiddleware(
+		handlers.SessionMiddleware(handlers.AvatarHandler))))
+	http.HandleFunc("/scoreboard", handlers.RecoverMiddleware(handlers.CORSMiddleware(
+		handlers.ScoreboardHandler)))
 
 	// swag init -g handlers/api.go
 	http.HandleFunc("/api/docs/", httpSwagger.WrapHandler)

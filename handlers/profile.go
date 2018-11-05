@@ -200,17 +200,11 @@ func getProfile(w http.ResponseWriter, r *http.Request) {
 		}
 		fmt.Fprintln(w, string(json))
 	} else {
-		searchID, err := getUserIDFromSessionID(r)
-		if err != nil {
-			if err == database.ErrSessionNotFound {
-				w.WriteHeader(http.StatusUnauthorized)
-				return
-			}
-			log.Println(err)
-			w.WriteHeader(http.StatusInternalServerError)
+		if !r.Context().Value(keyIsAuthenticated).(bool) {
+			w.WriteHeader(http.StatusUnauthorized)
 			return
 		}
-		profile, err := database.GetUserProfileByID(searchID)
+		profile, err := database.GetUserProfileByID(r.Context().Value(keyUserID).(int))
 		if err != nil {
 			switch err.(type) {
 			case database.UserNotFoundError:
@@ -311,18 +305,13 @@ func postProfile(w http.ResponseWriter, r *http.Request) {
 // @Failure 500 "Ошибка в бд"
 // @Router /profile [PUT]
 func putProfile(w http.ResponseWriter, r *http.Request) {
-	id, err := getUserIDFromSessionID(r)
-	if err != nil {
-		if err == database.ErrSessionNotFound {
-			w.WriteHeader(http.StatusUnauthorized)
-			return
-		}
-		w.WriteHeader(http.StatusInternalServerError)
+	if !r.Context().Value(keyIsAuthenticated).(bool) {
+		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
 
 	u := &models.Profile{}
-	err = cleanProfile(r, u)
+	err := cleanProfile(r, u)
 	if err != nil {
 		switch err.(type) {
 		case ParseJSONError:
@@ -373,6 +362,7 @@ func putProfile(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusForbidden)
 		fmt.Fprintln(w, string(json))
 	} else {
+		id := r.Context().Value(keyUserID).(int)
 		err := database.UpdateUserByID(id, u)
 		if err != nil {
 			switch err.(type) {

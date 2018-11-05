@@ -62,19 +62,6 @@ func loginUser(w http.ResponseWriter, userID int) error {
 	return nil
 }
 
-func getUserIDFromSessionID(r *http.Request) (int, error) {
-	c, err := r.Cookie("session_id")
-	if err != nil {
-		return -1, err
-	}
-	id, err := database.GetIDFromSession(c.Value)
-	if err != nil {
-		return -1, err
-	}
-
-	return id, nil
-}
-
 func SessionHandler(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
@@ -99,9 +86,8 @@ func SessionHandler(w http.ResponseWriter, r *http.Request) {
 // @Failure 500 "Ошибка в бд"
 // @Router /session [GET]
 func getSession(w http.ResponseWriter, r *http.Request) {
-	c, err := r.Cookie("session_id")
-	if err == nil {
-		sID, err := json.Marshal(models.Session{SessionID: c.Value})
+	if r.Context().Value(keyIsAuthenticated).(bool) {
+		sID, err := json.Marshal(models.Session{SessionID: r.Context().Value(keySessionID).(string)})
 		if err != nil {
 			log.Println(err)
 			w.WriteHeader(http.StatusInternalServerError)
@@ -127,14 +113,13 @@ func getSession(w http.ResponseWriter, r *http.Request) {
 // @Failure 500 "Внутренняя ошибка"
 // @Router /session [POST]
 func postSession(w http.ResponseWriter, r *http.Request) {
-	_, err := r.Cookie("session_id")
-	if err == nil {
+	if r.Context().Value(keyIsAuthenticated).(bool) {
 		// user has already logged in
 		return
 	}
 
 	u := &models.UserPassword{}
-	err = cleanLoginInfo(r, u)
+	err := cleanLoginInfo(r, u)
 	if err != nil {
 		switch err.(type) {
 		case ParseJSONError:
@@ -179,17 +164,19 @@ func postSession(w http.ResponseWriter, r *http.Request) {
 // @Success 200 "Успешный выход / пользователь уже разлогинен"
 // @Router /session [DELETE]
 func deleteSession(w http.ResponseWriter, r *http.Request) {
-	session, err := r.Cookie("session_id")
-	if err == http.ErrNoCookie {
+	if !r.Context().Value(keyIsAuthenticated).(bool) {
 		// user has already logged out
 		return
 	}
-
-	err = database.DeleteSession(session.Value)
+	err := database.DeleteSession(r.Context().Value(keySessionID).(string))
 	if err != nil { // but we continue
 		log.Println(err)
 	}
 
-	session.Expires = time.Now().AddDate(0, 0, -1)
-	http.SetCookie(w, session)
+	http.SetCookie(w, &http.Cookie{
+		Name:     "session_id",
+		Expires:  time.Now().AddDate(0, 0, -1),
+		Secure:   true,
+		HttpOnly: true,
+	})
 }
