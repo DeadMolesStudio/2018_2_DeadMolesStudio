@@ -148,8 +148,8 @@ paths:
         "400":
           description: Неверный формат JSON
         "403":
-          description: Занята почта или ник, пароль не удовлетворяет правилам безопасности,
-            другие ошибки
+          description: 'Ошибки при регистрации: невалидна или занята почта, занят
+            ник, пароль не удовлетворяет правилам безопасности, другие ошибки'
           schema:
             $ref: '#/definitions/models.ProfileErrorList'
             type: object
@@ -180,8 +180,8 @@ paths:
         "401":
           description: Не залогинен
         "403":
-          description: Занята почта или ник, пароль не удовлетворяет правилам безопасности,
-            другие ошибки
+          description: 'Ошибки при регистрации: невалидна или занята почта, занят
+            ник, пароль не удовлетворяет правилам безопасности, другие ошибки'
           schema:
             $ref: '#/definitions/models.ProfileErrorList'
             type: object
@@ -254,7 +254,7 @@ paths:
             $ref: '#/definitions/models.Session'
             type: object
         "400":
-          description: Неверный формат JSON
+          description: Неверный формат JSON, невалидные данные
         "422":
           description: Неверная пара пользователь/пароль
         "500":
