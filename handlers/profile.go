@@ -123,8 +123,6 @@ func ProfileHandler(w http.ResponseWriter, r *http.Request) {
 		postProfile(w, r)
 	case http.MethodPut:
 		putProfile(w, r)
-	case http.MethodOptions:
-		return
 	default:
 		w.WriteHeader(http.StatusMethodNotAllowed)
 	}

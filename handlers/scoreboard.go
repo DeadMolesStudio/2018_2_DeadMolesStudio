@@ -49,9 +49,6 @@ func ScoreboardHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		w.Header().Set("Content-Type", "application/json")
 		fmt.Fprintln(w, string(json))
-
-	case http.MethodOptions:
-		return
 	default:
 		w.WriteHeader(http.StatusMethodNotAllowed)
 	}

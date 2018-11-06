@@ -71,8 +71,6 @@ func SessionHandler(w http.ResponseWriter, r *http.Request) {
 		postSession(w, r)
 	case http.MethodDelete:
 		deleteSession(w, r)
-	case http.MethodOptions:
-		return
 	default:
 		w.WriteHeader(http.StatusMethodNotAllowed)
 	}
