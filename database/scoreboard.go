@@ -1,39 +1,38 @@
 package database
 
 import (
-	"sort"
-
 	"github.com/go-park-mail-ru/2018_2_DeadMolesStudio/models"
 )
 
 func GetUserPositionsDescendingPaginated(p *models.FetchScoreboardPage) (
 	[]models.Position, int, error) {
-	var records []models.Position
-	if p.Page*p.Limit >= uint(len(users)) {
-		return []models.Position{}, len(users), nil
-	}
-	// example: page 0 = 0..9 positions (limit = 10)
-	if p.Limit != 0 {
-		for i := p.Page * p.Limit; i < uint(len(users)) && i < (p.Page+1)*p.Limit; i++ {
-			records = append(records, models.Position{
-				ID:       users[i].UserID,
-				Nickname: users[i].Nickname,
-				Points:   users[i].Record,
-			})
-		}
-	} else {
-		for _, v := range users {
-			records = append(records, models.Position{
-				ID:       v.UserID,
-				Nickname: v.Nickname,
-				Points:   v.Record,
-			})
-		}
+	records := []models.Position{}
+	total, err := GetCountOfUsers()
+	if err != nil {
+		return records, total, err
 	}
 
-	sort.Slice(records, func(i, j int) bool {
-		return records[i].Points > records[j].Points
-	})
+	// TODO: optimize it
+	rows, err := db.Queryx(`
+		SELECT user_id, nickname, record FROM user_profile
+		ORDER BY record DESC
+		LIMIT $1
+		OFFSET $2`,
+		p.Limit, p.Limit*p.Page)
+	if err != nil {
 
-	return records, len(users), nil
+	}
+	if err := rows.Err(); err != nil {
+		return records, total, err
+	}
+	r := models.Position{}
+	for rows.Next() {
+		err := rows.StructScan(&r)
+		if err != nil {
+			return records, total, err
+		}
+		records = append(records, r)
+	}
+
+	return records, total, nil
 }

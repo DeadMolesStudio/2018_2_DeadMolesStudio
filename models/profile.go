@@ -12,7 +12,7 @@ type RegisterProfile struct {
 }
 
 type User struct {
-	UserID uint `json:"id"`
+	UserID uint `json:"id" db:"user_id"`
 	UserPassword
 }
 

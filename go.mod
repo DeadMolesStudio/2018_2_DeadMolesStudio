@@ -7,6 +7,9 @@ require (
 	github.com/go-openapi/jsonreference v0.17.2 // indirect
 	github.com/go-openapi/spec v0.17.2 // indirect
 	github.com/gorilla/schema v1.0.2
+	github.com/jmoiron/sqlx v1.2.0
+	github.com/lib/pq v1.0.0
+	github.com/rubenv/sql-migrate v0.0.0-20181106121204-ba2c6a7295c5
 	github.com/satori/go.uuid v1.2.0
 	github.com/swaggo/files v0.0.0-20180215091130-49c8a91ea3fa // indirect
 	github.com/swaggo/http-swagger v0.0.0-20180407044326-e030f0899372
@@ -16,4 +19,5 @@ require (
 	go.uber.org/multierr v1.1.0 // indirect
 	go.uber.org/zap v1.9.1
 	golang.org/x/net v0.0.0-20181102091132-c10e9556a7bc // indirect
+	gopkg.in/gorp.v1 v1.7.1 // indirect
 )

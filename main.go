@@ -5,6 +5,7 @@ import (
 
 	httpSwagger "github.com/swaggo/http-swagger"
 
+	"github.com/go-park-mail-ru/2018_2_DeadMolesStudio/database"
 	_ "github.com/go-park-mail-ru/2018_2_DeadMolesStudio/docs"
 	"github.com/go-park-mail-ru/2018_2_DeadMolesStudio/handlers"
 	"github.com/go-park-mail-ru/2018_2_DeadMolesStudio/logger"
@@ -13,6 +14,9 @@ import (
 func main() {
 	l := logger.InitLogger()
 	defer l.Sync()
+
+	db := database.InitDB("postgres@postgres:5432", "ketnipz")
+	defer db.Close()
 
 	http.HandleFunc("/session", handlers.RecoverMiddleware(handlers.AccessLogMiddleware(
 		handlers.CORSMiddleware(handlers.SessionMiddleware(handlers.SessionHandler)))))

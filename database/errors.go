@@ -7,6 +7,9 @@ import (
 
 var (
 	ErrSessionNotFound = errors.New("no session in database")
+
+	ErrNotNullConstraintViolation = errors.New("not null constraint violation")
+	ErrUniqueConstraintViolation  = errors.New("unique constraint violation")
 )
 
 type UserNotFoundError struct {

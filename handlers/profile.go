@@ -270,6 +270,11 @@ func postProfile(w http.ResponseWriter, r *http.Request) {
 	} else {
 		newU, err := database.CreateNewUser(u)
 		if err != nil {
+			if err == database.ErrUniqueConstraintViolation ||
+				err == database.ErrNotNullConstraintViolation {
+				w.WriteHeader(http.StatusUnprocessableEntity)
+				return
+			}
 			logger.Error(err)
 			w.WriteHeader(http.StatusInternalServerError)
 			return
