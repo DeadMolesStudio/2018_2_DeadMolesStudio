@@ -12,5 +12,8 @@ require (
 	github.com/swaggo/http-swagger v0.0.0-20180407044326-e030f0899372
 	github.com/swaggo/swag v1.3.2
 	github.com/urfave/cli v1.20.0 // indirect
+	go.uber.org/atomic v1.3.2 // indirect
+	go.uber.org/multierr v1.1.0 // indirect
+	go.uber.org/zap v1.9.1
 	golang.org/x/net v0.0.0-20181102091132-c10e9556a7bc // indirect
 )

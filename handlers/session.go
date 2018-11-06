@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"time"
 
@@ -12,6 +11,7 @@ import (
 	"github.com/satori/go.uuid"
 
 	"github.com/go-park-mail-ru/2018_2_DeadMolesStudio/database"
+	"github.com/go-park-mail-ru/2018_2_DeadMolesStudio/logger"
 	"github.com/go-park-mail-ru/2018_2_DeadMolesStudio/models"
 )
 
@@ -37,7 +37,7 @@ func loginUser(w http.ResponseWriter, userID uint) error {
 		sessionID = uuid.NewV4().String()
 		exists, err := database.CheckExistenceOfSession(sessionID)
 		if err != nil {
-			log.Println(err)
+			logger.Error(err)
 			return err
 		}
 		if !exists {
@@ -47,7 +47,7 @@ func loginUser(w http.ResponseWriter, userID uint) error {
 
 	err := database.CreateNewSession(sessionID, userID)
 	if err != nil {
-		log.Println(err)
+		logger.Error(err)
 		return err
 	}
 
@@ -88,7 +88,7 @@ func getSession(w http.ResponseWriter, r *http.Request) {
 	if r.Context().Value(keyIsAuthenticated).(bool) {
 		sID, err := json.Marshal(models.Session{SessionID: r.Context().Value(keySessionID).(string)})
 		if err != nil {
-			log.Println(err)
+			logger.Error(err)
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
@@ -124,7 +124,7 @@ func postSession(w http.ResponseWriter, r *http.Request) {
 		case ParseJSONError:
 			w.WriteHeader(http.StatusBadRequest)
 		default:
-			log.Println(err, "in sessionHandler in getUserFromRequestBody")
+			logger.Error(err)
 			w.WriteHeader(http.StatusInternalServerError)
 		}
 		return
@@ -152,7 +152,7 @@ func postSession(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
-		log.Println("User logged in:", dbResponse.UserID, dbResponse.Email)
+		logger.Info("user with id %v and email %v logged in", dbResponse.UserID, dbResponse.Email)
 	} else {
 		w.WriteHeader(http.StatusUnprocessableEntity)
 	}
@@ -170,7 +170,7 @@ func deleteSession(w http.ResponseWriter, r *http.Request) {
 	}
 	err := database.DeleteSession(r.Context().Value(keySessionID).(string))
 	if err != nil { // but we continue
-		log.Println(err)
+		logger.Error(err)
 	}
 
 	http.SetCookie(w, &http.Cookie{

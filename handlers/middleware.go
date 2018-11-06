@@ -2,12 +2,12 @@ package handlers
 
 import (
 	"context"
-	"log"
 	"net/http"
 	"runtime/debug"
 	"time"
 
 	"github.com/go-park-mail-ru/2018_2_DeadMolesStudio/database"
+	"github.com/go-park-mail-ru/2018_2_DeadMolesStudio/logger"
 )
 
 type key int
@@ -52,7 +52,7 @@ func SessionMiddleware(next http.HandlerFunc) http.HandlerFunc {
 				http.SetCookie(w, c)
 				ctx = context.WithValue(ctx, keyIsAuthenticated, false)
 			default:
-				log.Println(err)
+				logger.Error(err)
 				w.WriteHeader(http.StatusInternalServerError)
 				return
 			}
@@ -67,10 +67,24 @@ func RecoverMiddleware(next http.HandlerFunc) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		defer func() {
 			if err := recover(); err != nil {
-				log.Println("[PANIC]:", err, "at", string(debug.Stack()))
+				logger.Error("[PANIC]: ", err, " at ", string(debug.Stack()))
 				w.WriteHeader(http.StatusInternalServerError)
 			}
 		}()
 		next.ServeHTTP(w, r)
+	})
+}
+
+func AccessLogMiddleware(next http.HandlerFunc) http.HandlerFunc {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		start := time.Now()
+		next.ServeHTTP(w, r)
+
+		logger.Infow(r.URL.Path,
+			"method", r.Method,
+			"remote_addr", r.RemoteAddr,
+			"url", r.URL.Path,
+			"work_time", time.Since(start).String(),
+		)
 	})
 }

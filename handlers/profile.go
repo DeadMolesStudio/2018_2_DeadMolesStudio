@@ -4,12 +4,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"net/http"
 
 	"github.com/asaskevich/govalidator"
 
 	"github.com/go-park-mail-ru/2018_2_DeadMolesStudio/database"
+	"github.com/go-park-mail-ru/2018_2_DeadMolesStudio/logger"
 	"github.com/go-park-mail-ru/2018_2_DeadMolesStudio/models"
 )
 
@@ -42,7 +42,7 @@ func validateNickname(s string) ([]models.ProfileError, error) {
 
 	exists, err := database.CheckExistenceOfNickname(s)
 	if err != nil {
-		log.Println(err)
+		logger.Error(err)
 		return errors, err
 	}
 	if exists {
@@ -69,7 +69,7 @@ func validateEmail(s string) ([]models.ProfileError, error) {
 
 	exists, err := database.CheckExistenceOfEmail(s)
 	if err != nil {
-		log.Println(err)
+		logger.Error(err)
 		return errors, err
 	}
 	if exists {
@@ -155,7 +155,7 @@ func getProfile(w http.ResponseWriter, r *http.Request) {
 				w.WriteHeader(http.StatusNotFound)
 				return
 			default:
-				log.Println(err)
+				logger.Error(err)
 				w.WriteHeader(http.StatusInternalServerError)
 				return
 			}
@@ -164,7 +164,7 @@ func getProfile(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		json, err := json.Marshal(profile)
 		if err != nil {
-			log.Println(err, "in profileMethod")
+			logger.Error(err)
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
@@ -177,7 +177,7 @@ func getProfile(w http.ResponseWriter, r *http.Request) {
 				w.WriteHeader(http.StatusNotFound)
 				return
 			default:
-				log.Println(err)
+				logger.Error(err)
 				w.WriteHeader(http.StatusInternalServerError)
 				return
 			}
@@ -186,7 +186,7 @@ func getProfile(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		json, err := json.Marshal(profile)
 		if err != nil {
-			log.Println(err, "in profileMethod")
+			logger.Error(err)
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
@@ -203,7 +203,7 @@ func getProfile(w http.ResponseWriter, r *http.Request) {
 				w.WriteHeader(http.StatusNotFound)
 				return
 			default:
-				log.Println(err)
+				logger.Error(err)
 				w.WriteHeader(http.StatusInternalServerError)
 				return
 			}
@@ -212,7 +212,7 @@ func getProfile(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		json, err := json.Marshal(profile)
 		if err != nil {
-			log.Println(err, "in profileMethod")
+			logger.Error(err)
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
@@ -259,7 +259,7 @@ func postProfile(w http.ResponseWriter, r *http.Request) {
 	if len(fieldErrors) != 0 {
 		json, err := json.Marshal(models.ProfileErrorList{Errors: fieldErrors})
 		if err != nil {
-			log.Println(err)
+			logger.Error(err)
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
@@ -270,7 +270,7 @@ func postProfile(w http.ResponseWriter, r *http.Request) {
 	} else {
 		newU, err := database.CreateNewUser(u)
 		if err != nil {
-			log.Println(err)
+			logger.Error(err)
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
@@ -280,7 +280,7 @@ func postProfile(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
-		log.Println("New user logged in:", newU.UserID, newU.Email, newU.Nickname)
+		logger.Infof("New user with id %v, email %v and nickname %v logged in", newU.UserID, newU.Email, newU.Nickname)
 	}
 }
 
@@ -323,7 +323,7 @@ func putProfile(w http.ResponseWriter, r *http.Request) {
 	if u.Nickname != "" {
 		valErrors, dbErr := validateNickname(u.Nickname)
 		if dbErr != nil {
-			log.Println(dbErr)
+			logger.Error(dbErr)
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
@@ -332,7 +332,7 @@ func putProfile(w http.ResponseWriter, r *http.Request) {
 	if u.Email != "" {
 		valErrors, dbErr := validateEmail(u.Email)
 		if dbErr != nil {
-			log.Println(dbErr)
+			logger.Error(dbErr)
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
@@ -345,7 +345,7 @@ func putProfile(w http.ResponseWriter, r *http.Request) {
 	if len(fieldErrors) != 0 {
 		json, err := json.Marshal(models.ProfileErrorList{Errors: fieldErrors})
 		if err != nil {
-			log.Println(err)
+			logger.Error(err)
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
@@ -361,12 +361,12 @@ func putProfile(w http.ResponseWriter, r *http.Request) {
 			case database.UserNotFoundError:
 				w.WriteHeader(http.StatusNotFound)
 			default:
-				log.Println(err)
+				logger.Error(err)
 				w.WriteHeader(http.StatusInternalServerError)
 			}
 			return
 		}
-		log.Println("User with id", id, "changed to", u.Nickname, u.Email)
+		logger.Infof("user with id %v changed to %v %v", id, u.Nickname, u.Email)
 	}
 }
 

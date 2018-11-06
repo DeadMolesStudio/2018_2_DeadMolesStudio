@@ -3,10 +3,10 @@ package handlers
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
 
 	"github.com/go-park-mail-ru/2018_2_DeadMolesStudio/database"
+	"github.com/go-park-mail-ru/2018_2_DeadMolesStudio/logger"
 	"github.com/go-park-mail-ru/2018_2_DeadMolesStudio/models"
 )
 
@@ -32,7 +32,7 @@ func ScoreboardHandler(w http.ResponseWriter, r *http.Request) {
 		records, total, err := database.GetUserPositionsDescendingPaginated(
 			params)
 		if err != nil {
-			log.Println(err)
+			logger.Error(err)
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
@@ -43,7 +43,7 @@ func ScoreboardHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		json, err := json.Marshal(positionsList)
 		if err != nil {
-			log.Println(err, "in scoreboardHandler while parsing struct in json")
+			logger.Error(err)
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
