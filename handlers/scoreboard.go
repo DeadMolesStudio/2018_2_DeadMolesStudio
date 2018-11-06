@@ -14,8 +14,8 @@ import (
 // @Summary Получить таблицу лидеров (пагинация присутствует)
 // @ID get-scoreboard
 // @Produce json
-// @Param Limit query int false "Пользователей на страницу"
-// @Param Page query int false "Страница номер"
+// @Param Limit query uint false "Пользователей на страницу"
+// @Param Page query uint false "Страница номер"
 // @Success 200 {object} models.PositionList "Таблицу лидеров или ее страница и общее количество"
 // @Failure 500 "Ошибка в бд"
 // @Router /scoreboard [GET]
@@ -24,7 +24,6 @@ func ScoreboardHandler(w http.ResponseWriter, r *http.Request) {
 	case http.MethodGet:
 		params := &models.FetchScoreboardPage{}
 		err := decoder.Decode(params, r.URL.Query())
-
 		if err != nil {
 			w.WriteHeader(http.StatusBadRequest)
 			return

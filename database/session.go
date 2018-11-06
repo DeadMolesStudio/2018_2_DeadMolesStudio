@@ -5,10 +5,10 @@ import (
 )
 
 var sessions = models.Sessions{
-	Sessions: make(map[string]int),
+	Sessions: make(map[string]uint),
 }
 
-func CreateNewSession(sessionID string, userID int) error {
+func CreateNewSession(sessionID string, userID uint) error {
 	sessions.Lock()
 	sessions.Sessions[sessionID] = userID
 	sessions.Unlock()
@@ -24,12 +24,12 @@ func DeleteSession(sessionID string) error {
 	return nil
 }
 
-func GetIDFromSession(sessionID string) (int, error) {
+func GetIDFromSession(sessionID string) (uint, error) {
 	sessions.Lock()
 	id, ok := sessions.Sessions[sessionID]
 	sessions.Unlock()
 	if !ok {
-		return -1, ErrSessionNotFound
+		return 0, ErrSessionNotFound
 	}
 
 	return id, nil

@@ -2,6 +2,7 @@ module github.com/go-park-mail-ru/2018_2_DeadMolesStudio
 
 require (
 	github.com/alecthomas/template v0.0.0-20160405071501-a0175ee3bccc // indirect
+	github.com/asaskevich/govalidator v0.0.0-20180720115003-f9ffefc3facf
 	github.com/ghodss/yaml v1.0.0 // indirect
 	github.com/go-openapi/jsonreference v0.17.2 // indirect
 	github.com/go-openapi/spec v0.17.2 // indirect

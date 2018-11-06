@@ -9,12 +9,12 @@ import (
 func GetUserPositionsDescendingPaginated(p *models.FetchScoreboardPage) (
 	[]models.Position, int, error) {
 	var records []models.Position
-	if p.Page*p.Limit >= len(users) {
+	if p.Page*p.Limit >= uint(len(users)) {
 		return []models.Position{}, len(users), nil
 	}
 	// example: page 0 = 0..9 positions (limit = 10)
 	if p.Limit != 0 {
-		for i := p.Page * p.Limit; i < len(users) && i < (p.Page+1)*p.Limit; i++ {
+		for i := p.Page * p.Limit; i < uint(len(users)) && i < (p.Page+1)*p.Limit; i++ {
 			records = append(records, models.Position{
 				ID:       users[i].UserID,
 				Nickname: users[i].Nickname,

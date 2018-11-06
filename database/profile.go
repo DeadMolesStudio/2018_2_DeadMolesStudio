@@ -5,7 +5,7 @@ import (
 )
 
 var users []models.Profile
-var nextID = 1
+var nextID uint = 1
 
 func GetUserPassword(e string) (models.User, error) {
 	for _, v := range users {
@@ -17,15 +17,18 @@ func GetUserPassword(e string) (models.User, error) {
 	return models.User{}, UserNotFoundError{"email"}
 }
 
-func CreateNewUser(u *models.Profile) error {
-	u.UserID = nextID
+func CreateNewUser(u *models.RegisterProfile) (models.Profile, error) {
+	res := models.Profile{}
+	res.UserID = nextID
+	res.UserPassword = u.UserPassword
+	res.Nickname = u.Nickname
 	nextID++
-	users = append(users, *u)
+	users = append(users, res)
 
-	return nil
+	return res, nil
 }
 
-func UpdateUserByID(id int, u *models.Profile) error {
+func UpdateUserByID(id uint, u *models.RegisterProfile) error {
 	for k := range users {
 		if id == users[k].UserID {
 			if u.Nickname != "" {
@@ -44,7 +47,7 @@ func UpdateUserByID(id int, u *models.Profile) error {
 	return UserNotFoundError{"id"}
 }
 
-func GetUserProfileByID(id int) (models.Profile, error) {
+func GetUserProfileByID(id uint) (models.Profile, error) {
 	for _, v := range users {
 		if id == v.UserID {
 			v.Password = ""

@@ -12,13 +12,13 @@ type RegisterProfile struct {
 }
 
 type User struct {
-	UserID int `json:"id"`
+	UserID uint `json:"id"`
 	UserPassword
 }
 
 type UserPassword struct {
-	Email    string `json:"email" example:"email@email.com"`
-	Password string `json:"password,omitempty" example:"password"`
+	Email    string `json:"email" example:"email@email.com" valid:"required~Почта не может быть пустой,email~Невалидная почта"`
+	Password string `json:"password,omitempty" example:"password" valid:"stringlength(8|32)~Пароль должен быть не менее 8 символов и не более 32 символов"`
 }
 
 type Stats struct {
@@ -38,6 +38,6 @@ type ProfileErrorList struct {
 }
 
 type RequestProfile struct {
-	ID       int
+	ID       uint
 	Nickname string
 }

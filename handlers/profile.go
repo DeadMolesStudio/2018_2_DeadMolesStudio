@@ -6,14 +6,14 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
-	"strings"
-	"unicode/utf8"
+
+	"github.com/asaskevich/govalidator"
 
 	"github.com/go-park-mail-ru/2018_2_DeadMolesStudio/database"
 	"github.com/go-park-mail-ru/2018_2_DeadMolesStudio/models"
 )
 
-func cleanProfile(r *http.Request, p *models.Profile) error {
+func cleanProfile(r *http.Request, p *models.RegisterProfile) error {
 	body, err := ioutil.ReadAll(r.Body)
 	defer r.Body.Close()
 	if err != nil {
@@ -31,23 +31,19 @@ func cleanProfile(r *http.Request, p *models.Profile) error {
 func validateNickname(s string) ([]models.ProfileError, error) {
 	var errors []models.ProfileError
 
-	if utf8.RuneCountInString(s) < 4 {
+	isValid := govalidator.StringLength(s, "4", "32")
+	if !isValid {
 		errors = append(errors, models.ProfileError{
 			Field: "nickname",
-			Text:  "Никнейм должен быть не менее 4 символов",
+			Text:  "Никнейм должен быть не менее 4 символов и не более 32 символов",
 		})
-	}
-	if utf8.RuneCountInString(s) > 32 {
-		errors = append(errors, models.ProfileError{
-			Field: "nickname",
-			Text:  "Никнейм должен быть не более 32 символов",
-		})
+		return errors, nil
 	}
 
 	exists, err := database.CheckExistenceOfNickname(s)
 	if err != nil {
 		log.Println(err)
-		return []models.ProfileError{}, err
+		return errors, err
 	}
 	if exists {
 		errors = append(errors, models.ProfileError{
@@ -62,17 +58,19 @@ func validateNickname(s string) ([]models.ProfileError, error) {
 func validateEmail(s string) ([]models.ProfileError, error) {
 	var errors []models.ProfileError
 
-	if strings.Contains(s, "@") == false {
+	isValid := govalidator.IsEmail(s)
+	if !isValid {
 		errors = append(errors, models.ProfileError{
 			Field: "email",
-			Text:  "Неверный формат почты",
+			Text:  "Невалидная почта",
 		})
+		return errors, nil
 	}
 
 	exists, err := database.CheckExistenceOfEmail(s)
 	if err != nil {
 		log.Println(err)
-		return []models.ProfileError{}, err
+		return errors, err
 	}
 	if exists {
 		errors = append(errors, models.ProfileError{
@@ -87,22 +85,18 @@ func validateEmail(s string) ([]models.ProfileError, error) {
 func validatePassword(s string) []models.ProfileError {
 	var errors []models.ProfileError
 
-	if utf8.RuneCountInString(s) < 8 {
+	isValid := govalidator.StringLength(s, "8", "32")
+	if !isValid {
 		errors = append(errors, models.ProfileError{
 			Field: "password",
-			Text:  "Пароль должен быть не менее 8 символов",
-		})
-	} else if utf8.RuneCountInString(s) > 32 {
-		errors = append(errors, models.ProfileError{
-			Field: "password",
-			Text:  "Пароль должен быть не более 32 символов",
+			Text:  "Пароль должен быть не менее 8 символов и не более 32 символов",
 		})
 	}
 
 	return errors
 }
 
-func validateFields(u *models.Profile) ([]models.ProfileError, error) {
+func validateFields(u *models.RegisterProfile) ([]models.ProfileError, error) {
 	var errors []models.ProfileError
 
 	valErrors, dbErr := validateNickname(u.Nickname)
@@ -140,7 +134,7 @@ func ProfileHandler(w http.ResponseWriter, r *http.Request) {
 // @Summary Получить профиль пользователя по ID, email или из сессии
 // @ID get-profile
 // @Produce json
-// @Param id query int false "ID"
+// @Param id query uint false "ID"
 // @Param nickname query string false "Никнейм"
 // @Success 200 {object} models.Profile "Пользователь найден, успешно"
 // @Failure 400 "Неправильный запрос"
@@ -204,7 +198,7 @@ func getProfile(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusUnauthorized)
 			return
 		}
-		profile, err := database.GetUserProfileByID(r.Context().Value(keyUserID).(int))
+		profile, err := database.GetUserProfileByID(r.Context().Value(keyUserID).(uint))
 		if err != nil {
 			switch err.(type) {
 			case database.UserNotFoundError:
@@ -236,12 +230,12 @@ func getProfile(w http.ResponseWriter, r *http.Request) {
 // @Param Profile body models.RegisterProfile true "Никнейм, почта и пароль"
 // @Success 200 "Пользователь зарегистрирован и залогинен успешно"
 // @Failure 400 "Неверный формат JSON"
-// @Failure 403 {object} models.ProfileErrorList "Занята почта или ник, пароль не удовлетворяет правилам безопасности, другие ошибки"
+// @Failure 403 {object} models.ProfileErrorList "Ошибки при регистрации: невалидна или занята почта, занят ник, пароль не удовлетворяет правилам безопасности, другие ошибки"
 // @Failure 422 "При регистрации не все параметры"
 // @Failure 500 "Ошибка в бд"
 // @Router /profile [POST]
 func postProfile(w http.ResponseWriter, r *http.Request) {
-	u := &models.Profile{}
+	u := &models.RegisterProfile{}
 	err := cleanProfile(r, u)
 	if err != nil {
 		switch err.(type) {
@@ -276,19 +270,19 @@ func postProfile(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusForbidden)
 		fmt.Fprintln(w, string(json))
 	} else {
-		err := database.CreateNewUser(u)
+		newU, err := database.CreateNewUser(u)
 		if err != nil {
 			log.Println(err)
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
 
-		err = loginUser(w, u.UserID)
+		err = loginUser(w, newU.UserID)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
-		log.Println("New user logged in:", u.UserID, u.Email, u.Nickname)
+		log.Println("New user logged in:", newU.UserID, newU.Email, newU.Nickname)
 	}
 }
 
@@ -301,7 +295,7 @@ func postProfile(w http.ResponseWriter, r *http.Request) {
 // @Success 200 "Пользователь найден, успешно изменены данные"
 // @Failure 400 "Неверный формат JSON"
 // @Failure 401 "Не залогинен"
-// @Failure 403 {object} models.ProfileErrorList "Занята почта или ник, пароль не удовлетворяет правилам безопасности, другие ошибки"
+// @Failure 403 {object} models.ProfileErrorList "Ошибки при регистрации: невалидна или занята почта, занят ник, пароль не удовлетворяет правилам безопасности, другие ошибки"
 // @Failure 500 "Ошибка в бд"
 // @Router /profile [PUT]
 func putProfile(w http.ResponseWriter, r *http.Request) {
@@ -310,7 +304,7 @@ func putProfile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	u := &models.Profile{}
+	u := &models.RegisterProfile{}
 	err := cleanProfile(r, u)
 	if err != nil {
 		switch err.(type) {
@@ -362,7 +356,7 @@ func putProfile(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusForbidden)
 		fmt.Fprintln(w, string(json))
 	} else {
-		id := r.Context().Value(keyUserID).(int)
+		id := r.Context().Value(keyUserID).(uint)
 		err := database.UpdateUserByID(id, u)
 		if err != nil {
 			switch err.(type) {

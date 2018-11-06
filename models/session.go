@@ -10,5 +10,5 @@ type Session struct {
 
 type Sessions struct {
 	sync.Mutex
-	Sessions map[string]int
+	Sessions map[string]uint
 }

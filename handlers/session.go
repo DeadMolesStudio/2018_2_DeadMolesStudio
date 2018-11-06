@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/asaskevich/govalidator"
 	"github.com/satori/go.uuid"
 
 	"github.com/go-park-mail-ru/2018_2_DeadMolesStudio/database"
@@ -29,7 +30,7 @@ func cleanLoginInfo(r *http.Request, u *models.UserPassword) error {
 	return nil
 }
 
-func loginUser(w http.ResponseWriter, userID int) error {
+func loginUser(w http.ResponseWriter, userID uint) error {
 	sessionID := ""
 	for {
 		var err error
@@ -108,7 +109,7 @@ func getSession(w http.ResponseWriter, r *http.Request) {
 // @Produce json
 // @Param UserPassword body models.UserPassword true "Почта и пароль"
 // @Success 200 {object} models.Session "Успешный вход / пользователь уже залогинен"
-// @Failure 400 "Неверный формат JSON"
+// @Failure 400 "Неверный формат JSON, невалидные данные"
 // @Failure 422 "Неверная пара пользователь/пароль"
 // @Failure 500 "Внутренняя ошибка"
 // @Router /session [POST]
@@ -130,8 +131,9 @@ func postSession(w http.ResponseWriter, r *http.Request) {
 		}
 		return
 	}
-	if u.Email == "" || u.Password == "" {
-		w.WriteHeader(http.StatusBadRequest)
+	isValid := govalidator.IsEmail(u.Email)
+	if !isValid {
+		sendError(w, r, fmt.Errorf("Невалидная почта"), http.StatusBadRequest)
 		return
 	}
 
