@@ -7,6 +7,8 @@
     "encoderConfig": {
         "messageKey": "message",
         "levelKey": "level",
-        "levelEncoder": "lowercase"
+        "levelEncoder": "lowercase",
+        "timeKey": "timestamp",
+        "timeEncoder": "iso8601"
     }
 }
