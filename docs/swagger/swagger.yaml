@@ -1,0 +1,263 @@
+basePath: /api
+definitions:
+  models.Position:
+    properties:
+      id:
+        example: 42
+        type: integer
+      nickname:
+        example: Nick
+        type: string
+      record:
+        example: 100500
+        type: integer
+    type: object
+  models.PositionList:
+    properties:
+      players:
+        items:
+          $ref: '#/definitions/models.Position'
+        type: array
+      total:
+        example: 1
+        type: integer
+    type: object
+  models.Profile:
+    properties:
+      draws:
+        type: integer
+      email:
+        example: email@email.com
+        type: string
+      id:
+        type: integer
+      loss:
+        type: integer
+      nickname:
+        example: Nick
+        type: string
+      password:
+        example: password
+        type: string
+      record:
+        type: integer
+      win:
+        type: integer
+    type: object
+  models.ProfileError:
+    properties:
+      field:
+        example: nickname
+        type: string
+      text:
+        example: Этот никнейм уже занят
+        type: string
+    type: object
+  models.ProfileErrorList:
+    properties:
+      error:
+        items:
+          $ref: '#/definitions/models.ProfileError'
+        type: array
+    type: object
+  models.RegisterProfile:
+    properties:
+      email:
+        example: email@email.com
+        type: string
+      nickname:
+        example: Nick
+        type: string
+      password:
+        example: password
+        type: string
+    type: object
+  models.Session:
+    properties:
+      session_id:
+        example: ef84d238-47ef-4452-9536-99380db79911
+        type: string
+    type: object
+  models.UserPassword:
+    properties:
+      email:
+        example: email@email.com
+        type: string
+      password:
+        example: password
+        type: string
+    type: object
+info:
+  contact:
+    email: aandreev06.1998@gmail.com
+    name: Artyom Andreev
+  description: This is a backend server for the game.
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  termsOfService: http://swagger.io/terms/
+  title: The Ketnipz Game API
+  version: "1.0"
+paths:
+  /profile:
+    get:
+      operationId: get-profile
+      parameters:
+      - description: ID
+        in: query
+        name: id
+        type: integer
+      - description: Никнейм
+        in: query
+        name: nickname
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Пользователь найден, успешно
+          schema:
+            $ref: '#/definitions/models.Profile'
+            type: object
+        "400":
+          description: Неправильный запрос
+        "401":
+          description: Не залогинен
+        "404":
+          description: Не найдено
+        "500":
+          description: Ошибка в бд
+      summary: Получить профиль пользователя по ID, email или из сессии
+    post:
+      consumes:
+      - application/json
+      operationId: post-profile
+      parameters:
+      - description: Никнейм, почта и пароль
+        in: body
+        name: Profile
+        required: true
+        schema:
+          $ref: '#/definitions/models.RegisterProfile'
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Пользователь зарегистрирован и залогинен успешно
+        "400":
+          description: Неверный формат JSON
+        "403":
+          description: 'Ошибки при регистрации: невалидна или занята почта, занят
+            ник, пароль не удовлетворяет правилам безопасности, другие ошибки'
+          schema:
+            $ref: '#/definitions/models.ProfileErrorList'
+            type: object
+        "422":
+          description: При регистрации не все параметры
+        "500":
+          description: Ошибка в бд
+      summary: Зарегистрировать по никнейму, почте и паролю и автоматически залогинить
+    put:
+      consumes:
+      - application/json
+      operationId: put-profile
+      parameters:
+      - description: Новые никнейм, и/или почта, и/или пароль
+        in: body
+        name: Profile
+        required: true
+        schema:
+          $ref: '#/definitions/models.RegisterProfile'
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Пользователь найден, успешно изменены данные
+        "400":
+          description: Неверный формат JSON
+        "401":
+          description: Не залогинен
+        "403":
+          description: 'Ошибки при регистрации: невалидна или занята почта, занят
+            ник, пароль не удовлетворяет правилам безопасности, другие ошибки'
+          schema:
+            $ref: '#/definitions/models.ProfileErrorList'
+            type: object
+        "500":
+          description: Ошибка в бд
+      summary: Изменить профиль, должен быть залогинен
+  /scoreboard:
+    get:
+      operationId: get-scoreboard
+      parameters:
+      - description: Пользователей на страницу
+        in: query
+        name: Limit
+        type: integer
+      - description: Страница номер
+        in: query
+        name: Page
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Таблицу лидеров или ее страница и общее количество
+          schema:
+            $ref: '#/definitions/models.PositionList'
+            type: object
+        "500":
+          description: Ошибка в бд
+      summary: Получить таблицу лидеров (пагинация присутствует)
+  /session:
+    delete:
+      operationId: delete-session
+      responses:
+        "200":
+          description: Успешный выход / пользователь уже разлогинен
+      summary: Разлогинить пользователя (удалить сессию)
+    get:
+      operationId: get-session
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Пользователь залогинен, успешно
+          schema:
+            $ref: '#/definitions/models.Session'
+            type: object
+        "401":
+          description: Не залогинен
+        "500":
+          description: Ошибка в бд
+      summary: Получить сессию пользователя, если есть сессия, то она в куке session_id
+    post:
+      consumes:
+      - application/json
+      operationId: post-session
+      parameters:
+      - description: Почта и пароль
+        in: body
+        name: UserPassword
+        required: true
+        schema:
+          $ref: '#/definitions/models.UserPassword'
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Успешный вход / пользователь уже залогинен
+          schema:
+            $ref: '#/definitions/models.Session'
+            type: object
+        "400":
+          description: Неверный формат JSON, невалидные данные
+        "422":
+          description: Неверная пара пользователь/пароль
+        "500":
+          description: Внутренняя ошибка
+      summary: Залогинить пользователя (создать сессию)
+swagger: "2.0"

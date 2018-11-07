@@ -1,30 +1,46 @@
 package main
 
 import (
-	"log"
 	"net/http"
-
+	
+	httpSwagger "github.com/swaggo/http-swagger"
+	
+	"github.com/go-park-mail-ru/2018_2_DeadMolesStudio/database"
+	_ "github.com/go-park-mail-ru/2018_2_DeadMolesStudio/docs"
+	"github.com/go-park-mail-ru/2018_2_DeadMolesStudio/game"
 	"github.com/go-park-mail-ru/2018_2_DeadMolesStudio/handlers"
+	"github.com/go-park-mail-ru/2018_2_DeadMolesStudio/logger"
+	"github.com/go-park-mail-ru/2018_2_DeadMolesStudio/sessions"
 )
 
-func middlewareCORS(next http.HandlerFunc) http.HandlerFunc {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
-		w.Header().Set("Access-Control-Allow-Origin", "https://dmstudio.now.sh")
-		w.Header().Set("Access-Control-Allow-Credentials", "true")
-		w.Header().Set("Access-Control-Max-Age", "86400")
-		w.Header().Set("Access-Control-Allow-Headers",
-			"Content-Type, User-Agent, Cache-Control, Accept, X-Requested-With, If-Modified-Since")
-		next.ServeHTTP(w, r)
-	})
-}
-
 func main() {
-	http.HandleFunc("/session", middlewareCORS(handlers.SessionHandler))
-	http.HandleFunc("/profile", middlewareCORS(handlers.ProfileHandler))
-	http.HandleFunc("/profile/avatar", middlewareCORS(handlers.AvatarHandler))
-	http.HandleFunc("/scoreboard", middlewareCORS(handlers.ScoreboardHandler))
+	l := logger.InitLogger()
+	defer l.Sync()
 
-	log.Println("starting server at:", 8080)
-	http.ListenAndServe(":8080", nil)
+	db := database.InitDB("postgres@postgres:5432", "ketnipz")
+	defer db.Close()
+
+	sdb := sessions.ConnectSessionDB("user@redis:6379", "0")
+	defer sdb.Close()
+
+	g := game.InitGodGameObject()
+	go g.Run()
+
+	http.HandleFunc("/session", handlers.RecoverMiddleware(handlers.AccessLogMiddleware(
+		handlers.CORSMiddleware(handlers.SessionMiddleware(handlers.SessionHandler)))))
+	http.HandleFunc("/profile", handlers.RecoverMiddleware(handlers.AccessLogMiddleware(
+		handlers.CORSMiddleware(handlers.SessionMiddleware(handlers.ProfileHandler)))))
+	http.HandleFunc("/profile/avatar", handlers.RecoverMiddleware(handlers.AccessLogMiddleware(
+		handlers.CORSMiddleware(handlers.SessionMiddleware(handlers.AvatarHandler)))))
+	http.HandleFunc("/scoreboard", handlers.RecoverMiddleware(handlers.AccessLogMiddleware(
+		handlers.CORSMiddleware(handlers.ScoreboardHandler))))
+
+	http.HandleFunc("/game/ws", handlers.RecoverMiddleware(handlers.AccessLogMiddleware(
+		handlers.CORSMiddleware(handlers.SessionMiddleware(handlers.StartGame)))))
+
+	// swag init -g handlers/api.go
+	http.HandleFunc("/api/docs/", httpSwagger.WrapHandler)
+
+	logger.Info("starting server at: ", 8080)
+	logger.Panic(http.ListenAndServe(":8080", nil))
 }

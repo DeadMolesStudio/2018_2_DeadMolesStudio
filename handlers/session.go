@@ -1,57 +1,56 @@
 package handlers
 
 import (
-	"crypto/rand"
-	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"io"
-	"log"
+	"io/ioutil"
 	"net/http"
 	"time"
-
+	
+	"github.com/asaskevich/govalidator"
+	"github.com/satori/go.uuid"
+	
 	"github.com/go-park-mail-ru/2018_2_DeadMolesStudio/database"
+	"github.com/go-park-mail-ru/2018_2_DeadMolesStudio/logger"
 	"github.com/go-park-mail-ru/2018_2_DeadMolesStudio/models"
+	"github.com/go-park-mail-ru/2018_2_DeadMolesStudio/sessions"
 )
 
-func generateSessionID() (id string, err error) {
-	b := make([]byte, 32)
-	if _, err = io.ReadFull(rand.Reader, b); err != nil {
-		return
+func cleanLoginInfo(r *http.Request, u *models.UserPassword) error {
+	body, err := ioutil.ReadAll(r.Body)
+	defer r.Body.Close()
+	if err != nil {
+		return err
 	}
-	id = base64.URLEncoding.EncodeToString(b)
-	return
+
+	err = json.Unmarshal(body, u)
+	if err != nil {
+		return ParseJSONError{err}
+	}
+
+	return nil
 }
 
-func loginUser(w http.ResponseWriter, userID int) error {
+func loginUser(w http.ResponseWriter, userID uint) error {
 	sessionID := ""
 	for {
-		var err error
-		sessionID, err = generateSessionID()
+		// create session, if collision ocquires, generate new sessionID
+		sessionID = uuid.NewV4().String()
+		success, err := sessions.Create(sessionID, userID)
 		if err != nil {
-			log.Println(err)
+			logger.Error(err)
 			return err
 		}
-		exists, err := database.CheckExistenceOfSession(sessionID)
-		if err != nil {
-			log.Println(err)
-			return err
-		}
-		if !exists {
+		if success {
 			break
 		}
-	}
-
-	err := database.CreateNewSession(sessionID, userID)
-	if err != nil {
-		log.Println(err)
-		return err
 	}
 
 	cookie := http.Cookie{
 		Name:     "session_id",
 		Value:    sessionID,
 		Expires:  time.Now().Add(30 * 24 * time.Hour),
+		Secure:   true,
 		HttpOnly: true,
 	}
 	http.SetCookie(w, &cookie)
@@ -59,91 +58,120 @@ func loginUser(w http.ResponseWriter, userID int) error {
 	return nil
 }
 
-func getUserIDFromSessionID(r *http.Request) (int, error) {
-	c, err := r.Cookie("session_id")
-	if err != nil {
-		return -1, err
-	}
-	id, err := database.GetIDFromSession(c.Value)
-	if err != nil {
-		return -1, err
-	}
-
-	return id, nil
-}
-
 func SessionHandler(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
-		c, err := r.Cookie("session_id")
-		if err == nil {
-			sID, err := json.Marshal(map[string]string{
-				c.Name: c.Value,
-			})
-			if err != nil {
-				log.Println(err)
-				w.WriteHeader(http.StatusInternalServerError)
-				return
-			}
-
-			w.Header().Set("Content-Type", "application/json")
-			fmt.Fprintln(w, string(sID))
-		} else {
-			w.WriteHeader(http.StatusUnauthorized)
-		}
+		getSession(w, r)
 	case http.MethodPost:
-		_, err := r.Cookie("session_id")
-		if err == nil {
-			// user has already logged in
-			return
-		}
+		postSession(w, r)
+	case http.MethodDelete:
+		deleteSession(w, r)
+	default:
+		w.WriteHeader(http.StatusMethodNotAllowed)
+	}
+}
 
-		u := &models.UserPassword{}
-		err = cleanLoginInfo(r, u)
-		if invalid := u.Email == "" || u.Password == ""; err != nil || invalid {
-			if invalid || err.Error() == "json error" {
-				w.WriteHeader(http.StatusBadRequest)
-				return
-			}
-
-			log.Println(err, "in sessionHandler in getUserFromRequestBody")
+// @Title Получить сессию
+// @Summary Получить сессию пользователя, если есть сессия, то она в куке session_id
+// @ID get-session
+// @Produce json
+// @Success 200 {object} models.Session "Пользователь залогинен, успешно"
+// @Failure 401 "Не залогинен"
+// @Failure 500 "Ошибка в бд"
+// @Router /session [GET]
+func getSession(w http.ResponseWriter, r *http.Request) {
+	if r.Context().Value(keyIsAuthenticated).(bool) {
+		sID, err := json.Marshal(models.Session{SessionID: r.Context().Value(keySessionID).(string)})
+		if err != nil {
+			logger.Error(err)
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
 
-		dbResponse, err := database.GetUserPassword(u.Email)
-
-		if err != nil {
-			w.WriteHeader(http.StatusUnprocessableEntity)
-			return
-		}
-		if u.Email == dbResponse.Email && u.Password == dbResponse.Password {
-			err := loginUser(w, dbResponse.UserID)
-			if err != nil {
-				w.WriteHeader(http.StatusInternalServerError)
-				return
-			}
-			log.Println("User logged in:", u.UserID, u.Email)
-		} else {
-			w.WriteHeader(http.StatusUnprocessableEntity)
-		}
-	case http.MethodDelete:
-		session, err := r.Cookie("session_id")
-		if err == http.ErrNoCookie {
-			// user has already logged out
-			return
-		}
-
-		err = database.DeleteSession(session.Value)
-		if err != nil { // but we continue
-			log.Println(err)
-		}
-
-		session.Expires = time.Now().AddDate(0, 0, -1)
-		http.SetCookie(w, session)
-	case http.MethodOptions:
-		return
-	default:
-		w.WriteHeader(http.StatusMethodNotAllowed)
+		w.Header().Set("Content-Type", "application/json")
+		fmt.Fprintln(w, string(sID))
+	} else {
+		w.WriteHeader(http.StatusUnauthorized)
 	}
+}
+
+// @Title Залогинить
+// @Summary Залогинить пользователя (создать сессию)
+// @ID post-session
+// @Accept json
+// @Produce json
+// @Param UserPassword body models.UserPassword true "Почта и пароль"
+// @Success 200 {object} models.Session "Успешный вход / пользователь уже залогинен"
+// @Failure 400 "Неверный формат JSON, невалидные данные"
+// @Failure 422 "Неверная пара пользователь/пароль"
+// @Failure 500 "Внутренняя ошибка"
+// @Router /session [POST]
+func postSession(w http.ResponseWriter, r *http.Request) {
+	if r.Context().Value(keyIsAuthenticated).(bool) {
+		// user has already logged in
+		return
+	}
+
+	u := &models.UserPassword{}
+	err := cleanLoginInfo(r, u)
+	if err != nil {
+		switch err.(type) {
+		case ParseJSONError:
+			w.WriteHeader(http.StatusBadRequest)
+		default:
+			logger.Error(err)
+			w.WriteHeader(http.StatusInternalServerError)
+		}
+		return
+	}
+	isValid := govalidator.IsEmail(u.Email)
+	if !isValid {
+		sendError(w, r, fmt.Errorf("Невалидная почта"), http.StatusBadRequest)
+		return
+	}
+
+	dbResponse, err := database.GetUserPassword(u.Email)
+
+	if err != nil {
+		switch err.(type) {
+		case database.UserNotFoundError:
+			w.WriteHeader(http.StatusUnprocessableEntity)
+		default:
+			w.WriteHeader(http.StatusInternalServerError)
+		}
+		return
+	}
+	if u.Email == dbResponse.Email && u.Password == dbResponse.Password {
+		err := loginUser(w, dbResponse.UserID)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		logger.Info("user with id %v and email %v logged in", dbResponse.UserID, dbResponse.Email)
+	} else {
+		w.WriteHeader(http.StatusUnprocessableEntity)
+	}
+}
+
+// @Title Разлогинить
+// @Summary Разлогинить пользователя (удалить сессию)
+// @ID delete-session
+// @Success 200 "Успешный выход / пользователь уже разлогинен"
+// @Router /session [DELETE]
+func deleteSession(w http.ResponseWriter, r *http.Request) {
+	if !r.Context().Value(keyIsAuthenticated).(bool) {
+		// user has already logged out
+		return
+	}
+	err := sessions.Delete(r.Context().Value(keySessionID).(string))
+	if err != nil { // but we continue
+		logger.Error(err)
+	}
+
+	http.SetCookie(w, &http.Cookie{
+		Name:     "session_id",
+		Expires:  time.Now().AddDate(0, 0, -1),
+		Secure:   true,
+		HttpOnly: true,
+	})
 }
