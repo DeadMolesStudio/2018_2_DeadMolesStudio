@@ -3,12 +3,14 @@ package main
 import (
 	"net/http"
 
+	
 	httpSwagger "github.com/swaggo/http-swagger"
-
+	
 	"github.com/go-park-mail-ru/2018_2_DeadMolesStudio/database"
 	_ "github.com/go-park-mail-ru/2018_2_DeadMolesStudio/docs"
 	"github.com/go-park-mail-ru/2018_2_DeadMolesStudio/handlers"
 	"github.com/go-park-mail-ru/2018_2_DeadMolesStudio/logger"
+	"github.com/go-park-mail-ru/2018_2_DeadMolesStudio/sessions"
 )
 
 func main() {
@@ -17,6 +19,9 @@ func main() {
 
 	db := database.InitDB("postgres@postgres:5432", "ketnipz")
 	defer db.Close()
+
+	sdb := sessions.ConnectSessionDB("user@redis:6379", "0")
+	defer sdb.Close()
 
 	http.HandleFunc("/session", handlers.RecoverMiddleware(handlers.AccessLogMiddleware(
 		handlers.CORSMiddleware(handlers.SessionMiddleware(handlers.SessionHandler)))))

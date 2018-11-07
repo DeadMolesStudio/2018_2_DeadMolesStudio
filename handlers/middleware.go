@@ -6,8 +6,9 @@ import (
 	"runtime/debug"
 	"time"
 
-	"github.com/go-park-mail-ru/2018_2_DeadMolesStudio/database"
+	
 	"github.com/go-park-mail-ru/2018_2_DeadMolesStudio/logger"
+	"github.com/go-park-mail-ru/2018_2_DeadMolesStudio/sessions"
 )
 
 type key int
@@ -40,13 +41,13 @@ func SessionMiddleware(next http.HandlerFunc) http.HandlerFunc {
 		ctx := r.Context()
 		c, err := r.Cookie("session_id")
 		if err == nil {
-			uid, err := database.GetIDFromSession(c.Value)
+			uid, err := sessions.Get(c.Value)
 			switch err {
 			case nil:
 				ctx = context.WithValue(ctx, keyIsAuthenticated, true)
 				ctx = context.WithValue(ctx, keySessionID, c.Value)
 				ctx = context.WithValue(ctx, keyUserID, uid)
-			case database.ErrSessionNotFound:
+			case sessions.ErrKeyNotFound:
 				// delete unvalid cookie
 				c.Expires = time.Now().AddDate(0, 0, -1)
 				http.SetCookie(w, c)

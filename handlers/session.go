@@ -6,13 +6,14 @@ import (
 	"io/ioutil"
 	"net/http"
 	"time"
-
+	
 	"github.com/asaskevich/govalidator"
 	"github.com/satori/go.uuid"
-
+	
 	"github.com/go-park-mail-ru/2018_2_DeadMolesStudio/database"
 	"github.com/go-park-mail-ru/2018_2_DeadMolesStudio/logger"
 	"github.com/go-park-mail-ru/2018_2_DeadMolesStudio/models"
+	"github.com/go-park-mail-ru/2018_2_DeadMolesStudio/sessions"
 )
 
 func cleanLoginInfo(r *http.Request, u *models.UserPassword) error {
@@ -33,22 +34,16 @@ func cleanLoginInfo(r *http.Request, u *models.UserPassword) error {
 func loginUser(w http.ResponseWriter, userID uint) error {
 	sessionID := ""
 	for {
-		var err error
+		// create session, if collision ocquires, generate new sessionID
 		sessionID = uuid.NewV4().String()
-		exists, err := database.CheckExistenceOfSession(sessionID)
+		success, err := sessions.Create(sessionID, userID)
 		if err != nil {
 			logger.Error(err)
 			return err
 		}
-		if !exists {
+		if success {
 			break
 		}
-	}
-
-	err := database.CreateNewSession(sessionID, userID)
-	if err != nil {
-		logger.Error(err)
-		return err
 	}
 
 	cookie := http.Cookie{
@@ -168,7 +163,7 @@ func deleteSession(w http.ResponseWriter, r *http.Request) {
 		// user has already logged out
 		return
 	}
-	err := database.DeleteSession(r.Context().Value(keySessionID).(string))
+	err := sessions.Delete(r.Context().Value(keySessionID).(string))
 	if err != nil { // but we continue
 		logger.Error(err)
 	}
