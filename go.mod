@@ -8,6 +8,7 @@ require (
 	github.com/go-openapi/spec v0.17.2 // indirect
 	github.com/gomodule/redigo v2.0.0+incompatible
 	github.com/gorilla/schema v1.0.2
+	github.com/gorilla/websocket v1.4.0
 	github.com/jmoiron/sqlx v1.2.0
 	github.com/lib/pq v1.0.0
 	github.com/rubenv/sql-migrate v0.0.0-20181106121204-ba2c6a7295c5
