@@ -7,6 +7,7 @@ CREATE TABLE IF NOT EXISTS user_profile (
     password varchar(64) NOT NULL,
 
     nickname citext UNIQUE NOT NULL,
+    avatar text,
 
     record integer DEFAULT 0,
     win integer DEFAULT 0,

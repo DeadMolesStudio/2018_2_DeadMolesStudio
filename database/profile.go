@@ -33,7 +33,7 @@ func CreateNewUser(u *models.RegisterProfile) (models.Profile, error) {
 	res := models.Profile{}
 	qres := db.QueryRowx(`
 		INSERT INTO user_profile (email, password, nickname)
-		VALUES ($1, $2, $3) RETURNING *`,
+		VALUES ($1, $2, $3) RETURNING user_id, email, nickname`,
 		u.Email, u.Password, u.Nickname)
 	if err := qres.Err(); err != nil {
 		pqErr := err.(*pq.Error)
@@ -102,7 +102,7 @@ func UpdateUserByID(id uint, u *models.RegisterProfile) error {
 func GetUserProfileByID(id uint) (models.Profile, error) {
 	res := models.Profile{}
 	qres := db.QueryRowx(`
-		SELECT user_id, email, nickname, record, win, draws, loss FROM user_profile
+		SELECT user_id, email, nickname, avatar, record, win, draws, loss FROM user_profile
 		WHERE user_id = $1`,
 		id)
 	if err := qres.Err(); err != nil {
@@ -122,7 +122,7 @@ func GetUserProfileByID(id uint) (models.Profile, error) {
 func GetUserProfileByNickname(nickname string) (models.Profile, error) {
 	res := models.Profile{}
 	qres := db.QueryRowx(`
-		SELECT user_id, email, nickname, record, win, draws, loss FROM user_profile
+		SELECT user_id, email, nickname, avatar, record, win, draws, loss FROM user_profile
 		WHERE nickname = $1`,
 		nickname)
 	if err := qres.Err(); err != nil {
@@ -193,4 +193,44 @@ func GetCountOfUsers() (int, error) {
 	}
 
 	return res, nil
+}
+
+func UploadAvatar(uID uint, path string) error {
+	qres, err := db.Exec(`
+		UPDATE user_profile
+		SET avatar = $2
+		WHERE user_id = $1`,
+		uID, path)
+	if err != nil {
+		return err
+	}
+	res, err := qres.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if res == 0 {
+		return &UserNotFoundError{"id"}
+	}
+
+	return nil
+}
+
+func DeleteAvatar(uID uint) error {
+	qres, err := db.Exec(`
+		UPDATE user_profile
+		SET avatar = NULL
+		WHERE user_id = $1`,
+		uID)
+	if err != nil {
+		return err
+	}
+	res, err := qres.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if res == 0 {
+		return &UserNotFoundError{"id"}
+	}
+
+	return nil
 }

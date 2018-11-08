@@ -9,6 +9,7 @@ import (
 	"github.com/asaskevich/govalidator"
 
 	"github.com/go-park-mail-ru/2018_2_DeadMolesStudio/database"
+	"github.com/go-park-mail-ru/2018_2_DeadMolesStudio/filesystem"
 	"github.com/go-park-mail-ru/2018_2_DeadMolesStudio/logger"
 	"github.com/go-park-mail-ru/2018_2_DeadMolesStudio/models"
 )
@@ -376,5 +377,95 @@ func putProfile(w http.ResponseWriter, r *http.Request) {
 }
 
 func AvatarHandler(w http.ResponseWriter, r *http.Request) {
-	return
+	switch r.Method {
+	case http.MethodPut:
+		putAvatar(w, r)
+	case http.MethodDelete:
+		deleteAvatar(w, r)
+	default:
+		w.WriteHeader(http.StatusMethodNotAllowed)
+	}
+}
+
+// @Title Изменить аватар
+// @Summary Загрузить или изменить уже существующий
+// @ID put-avatar
+// @Accept multipart/form-data
+// @Success 200 "Удалена аватарка у пользователя"
+// @Failure 401 "Не залогинен"
+// @Failure 404 "Пользователь не найден"
+// @Failure 500 "Ошибка при парсинге, в бд, файловой системе"
+// @Router /profile/avatar [DELETE]
+func putAvatar(w http.ResponseWriter, r *http.Request) {
+	if !r.Context().Value(keyIsAuthenticated).(bool) {
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+
+	err := r.ParseMultipartForm(5 * (1 << 20)) // 5 MB
+	if err != nil {
+		if err == http.ErrNotMultipart || err == http.ErrMissingBoundary {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		logger.Error(err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	avatar, fileHeader, err := r.FormFile("avatar")
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	defer avatar.Close()
+
+	uID := r.Context().Value(keyUserID).(uint)
+	filename := fileHeader.Filename
+	dir := "static/img/"
+	filename = filesystem.GetHashedNameForFile(uID, filename)
+	err = filesystem.SaveFile(avatar, dir, filename)
+	if err != nil {
+		logger.Error(err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	err = database.UploadAvatar(uID, "/"+dir+filename)
+	if err != nil {
+		switch err.(type) {
+		case *database.UserNotFoundError:
+			w.WriteHeader(http.StatusNotFound)
+		default:
+			logger.Error(err)
+			w.WriteHeader(http.StatusInternalServerError)
+		}
+		return
+	}
+}
+
+// @Title Удалить аватар
+// @Summary Удалить аватар, пользователь должен быть залогинен
+// @ID delete-avatar
+// @Success 200 "Удалена аватарка у пользователя"
+// @Failure 401 "Не залогинен"
+// @Failure 404 "Пользователь не найден"
+// @Failure 500 "Ошибка в бд"
+// @Router /profile/avatar [DELETE]
+func deleteAvatar(w http.ResponseWriter, r *http.Request) {
+	if !r.Context().Value(keyIsAuthenticated).(bool) {
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+
+	err := database.DeleteAvatar(r.Context().Value(keyUserID).(uint))
+	if err != nil {
+		switch err.(type) {
+		case *database.UserNotFoundError:
+			w.WriteHeader(http.StatusNotFound)
+		default:
+			logger.Error(err)
+			w.WriteHeader(http.StatusInternalServerError)
+		}
+		return
+	}
 }
