@@ -10,8 +10,8 @@ import (
 	"github.com/go-park-mail-ru/2018_2_DeadMolesStudio/models"
 )
 
-// @Title Получить таблицу лидеров
-// @Summary Получить таблицу лидеров (пагинация присутствует)
+// @Summary Получить таблицу лидеров
+// @Description Получить таблицу лидеров (пагинация присутствует)
 // @ID get-scoreboard
 // @Produce json
 // @Param Limit query uint false "Пользователей на страницу"

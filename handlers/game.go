@@ -9,6 +9,12 @@ import (
 	"github.com/go-park-mail-ru/2018_2_DeadMolesStudio/logger"
 )
 
+// @Summary Начать игру по WebSocket
+// @Description Инициализирует соединение для пользователя
+// @ID get-game-ws
+// @Success 101 "Switching Protocols"
+// @Failure 400 "Нет нужных заголовков"
+// @Router /game/ws [GET]
 func StartGame(w http.ResponseWriter, r *http.Request) {
 	upgrader := websocket.Upgrader{
 		CheckOrigin: func(r *http.Request) bool {

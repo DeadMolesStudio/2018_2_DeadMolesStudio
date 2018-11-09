@@ -71,8 +71,8 @@ func SessionHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// @Title Получить сессию
-// @Summary Получить сессию пользователя, если есть сессия, то она в куке session_id
+// @Summary Получить сессию
+// @Description Получить сессию пользователя, если есть сессия, то она в куке session_id
 // @ID get-session
 // @Produce json
 // @Success 200 {object} models.Session "Пользователь залогинен, успешно"
@@ -95,8 +95,8 @@ func getSession(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// @Title Залогинить
-// @Summary Залогинить пользователя (создать сессию)
+// @Summary Залогинить
+// @Description Залогинить пользователя (создать сессию)
 // @ID post-session
 // @Accept json
 // @Produce json
@@ -153,8 +153,8 @@ func postSession(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// @Title Разлогинить
-// @Summary Разлогинить пользователя (удалить сессию)
+// @Summary Разлогинить
+// @Descriptiond Разлогинить пользователя (удалить сессию)
 // @ID delete-session
 // @Success 200 "Успешный выход / пользователь уже разлогинен"
 // @Router /session [DELETE]

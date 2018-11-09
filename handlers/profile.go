@@ -129,8 +129,8 @@ func ProfileHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// @Title Получить профиль
-// @Summary Получить профиль пользователя по ID, email или из сессии
+// @Summary Получить профиль
+// @Description Получить профиль пользователя по ID, никнейму или из сессии
 // @ID get-profile
 // @Produce json
 // @Param id query uint false "ID"
@@ -221,8 +221,8 @@ func getProfile(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// @Title Зарегистрироваться и залогиниться по новому профилю
-// @Summary Зарегистрировать по никнейму, почте и паролю и автоматически залогинить
+// @Summary Зарегистрироваться и залогиниться по новому профилю
+// @Description Зарегистрировать по никнейму, почте и паролю и автоматически залогинить
 // @ID post-profile
 // @Accept json
 // @Produce json
@@ -290,8 +290,8 @@ func postProfile(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// @Title Изменить профиль
-// @Summary Изменить профиль, должен быть залогинен
+// @Summary Изменить профиль
+// @Description Изменить профиль, должен быть залогинен
 // @ID put-profile
 // @Accept json
 // @Produce json
@@ -387,15 +387,15 @@ func AvatarHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// @Title Изменить аватар
-// @Summary Загрузить или изменить уже существующий
+// @Summary Изменить аватар
+// @Description Загрузить или изменить уже существующий аватар
 // @ID put-avatar
 // @Accept multipart/form-data
 // @Success 200 "Удалена аватарка у пользователя"
 // @Failure 401 "Не залогинен"
 // @Failure 404 "Пользователь не найден"
 // @Failure 500 "Ошибка при парсинге, в бд, файловой системе"
-// @Router /profile/avatar [DELETE]
+// @Router /profile/avatar [PUT]
 func putAvatar(w http.ResponseWriter, r *http.Request) {
 	if !r.Context().Value(keyIsAuthenticated).(bool) {
 		w.WriteHeader(http.StatusUnauthorized)
@@ -443,8 +443,8 @@ func putAvatar(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// @Title Удалить аватар
-// @Summary Удалить аватар, пользователь должен быть залогинен
+// @Summary Удалить аватар
+// @Description Удалить аватар, пользователь должен быть залогинен
 // @ID delete-avatar
 // @Success 200 "Удалена аватарка у пользователя"
 // @Failure 401 "Не залогинен"

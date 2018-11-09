@@ -16,12 +16,28 @@
     },
     "basePath": "/api",
     "paths": {
+        "/game/ws": {
+            "get": {
+                "description": "Инициализирует соединение для пользователя",
+                "summary": "Начать игру по WebSocket",
+                "operationId": "get-game-ws",
+                "responses": {
+                    "101": {
+                        "description": "Switching Protocols"
+                    },
+                    "400": {
+                        "description": "Нет нужных заголовков"
+                    }
+                }
+            }
+        },
         "/profile": {
             "get": {
+                "description": "Получить профиль пользователя по ID, никнейму или из сессии",
                 "produces": [
                     "application/json"
                 ],
-                "summary": "Получить профиль пользователя по ID, email или из сессии",
+                "summary": "Получить профиль",
                 "operationId": "get-profile",
                 "parameters": [
                     {
@@ -60,13 +76,14 @@
                 }
             },
             "put": {
+                "description": "Изменить профиль, должен быть залогинен",
                 "consumes": [
                     "application/json"
                 ],
                 "produces": [
                     "application/json"
                 ],
-                "summary": "Изменить профиль, должен быть залогинен",
+                "summary": "Изменить профиль",
                 "operationId": "put-profile",
                 "parameters": [
                     {
@@ -103,13 +120,14 @@
                 }
             },
             "post": {
+                "description": "Зарегистрировать по никнейму, почте и паролю и автоматически залогинить",
                 "consumes": [
                     "application/json"
                 ],
                 "produces": [
                     "application/json"
                 ],
-                "summary": "Зарегистрировать по никнейму, почте и паролю и автоматически залогинить",
+                "summary": "Зарегистрироваться и залогиниться по новому профилю",
                 "operationId": "post-profile",
                 "parameters": [
                     {
@@ -146,12 +164,56 @@
                 }
             }
         },
+        "/profile/avatar": {
+            "put": {
+                "description": "Загрузить или изменить уже существующий аватар",
+                "consumes": [
+                    "multipart/form-data"
+                ],
+                "summary": "Изменить аватар",
+                "operationId": "put-avatar",
+                "responses": {
+                    "200": {
+                        "description": "Удалена аватарка у пользователя"
+                    },
+                    "401": {
+                        "description": "Не залогинен"
+                    },
+                    "404": {
+                        "description": "Пользователь не найден"
+                    },
+                    "500": {
+                        "description": "Ошибка при парсинге, в бд, файловой системе"
+                    }
+                }
+            },
+            "delete": {
+                "description": "Удалить аватар, пользователь должен быть залогинен",
+                "summary": "Удалить аватар",
+                "operationId": "delete-avatar",
+                "responses": {
+                    "200": {
+                        "description": "Удалена аватарка у пользователя"
+                    },
+                    "401": {
+                        "description": "Не залогинен"
+                    },
+                    "404": {
+                        "description": "Пользователь не найден"
+                    },
+                    "500": {
+                        "description": "Ошибка в бд"
+                    }
+                }
+            }
+        },
         "/scoreboard": {
             "get": {
+                "description": "Получить таблицу лидеров (пагинация присутствует)",
                 "produces": [
                     "application/json"
                 ],
-                "summary": "Получить таблицу лидеров (пагинация присутствует)",
+                "summary": "Получить таблицу лидеров",
                 "operationId": "get-scoreboard",
                 "parameters": [
                     {
@@ -183,10 +245,11 @@
         },
         "/session": {
             "get": {
+                "description": "Получить сессию пользователя, если есть сессия, то она в куке session_id",
                 "produces": [
                     "application/json"
                 ],
-                "summary": "Получить сессию пользователя, если есть сессия, то она в куке session_id",
+                "summary": "Получить сессию",
                 "operationId": "get-session",
                 "responses": {
                     "200": {
@@ -205,13 +268,14 @@
                 }
             },
             "post": {
+                "description": "Залогинить пользователя (создать сессию)",
                 "consumes": [
                     "application/json"
                 ],
                 "produces": [
                     "application/json"
                 ],
-                "summary": "Залогинить пользователя (создать сессию)",
+                "summary": "Залогинить",
                 "operationId": "post-session",
                 "parameters": [
                     {
@@ -245,11 +309,44 @@
                 }
             },
             "delete": {
-                "summary": "Разлогинить пользователя (удалить сессию)",
+                "summary": "Разлогинить",
                 "operationId": "delete-session",
                 "responses": {
                     "200": {
                         "description": "Успешный выход / пользователь уже разлогинен"
+                    }
+                }
+            }
+        },
+        "/static/{path/to/file}": {
+            "get": {
+                "description": "Отдать файл с диска",
+                "summary": "Отдать файл",
+                "operationId": "get-static",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Путь к файлу",
+                        "name": "PathToFile",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Файл найден"
+                    },
+                    "301": {
+                        "description": "Редирект, если имя папки не заканчивается на /"
+                    },
+                    "403": {
+                        "description": "Нет прав (сервер)"
+                    },
+                    "404": {
+                        "description": "Файл не найден"
+                    },
+                    "500": {
+                        "description": "Внутренняя ошибка"
                     }
                 }
             }
@@ -291,6 +388,9 @@
         "models.Profile": {
             "type": "object",
             "properties": {
+                "avatar": {
+                    "type": "string"
+                },
                 "draws": {
                     "type": "integer"
                 },
