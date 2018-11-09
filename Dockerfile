@@ -15,7 +15,7 @@ COPY --from=builder /src/dmstudio-server .
 COPY logger/logger-config.json logger/logger-config.json
 COPY migrations migrations
 
-VOLUME ["/var/log/dmstudio"]
+VOLUME ["/var/log/dmstudio", "/app/static"]
 
 EXPOSE 8080
 CMD ["./dmstudio-server"]
