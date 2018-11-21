@@ -9,6 +9,7 @@ import (
 	"github.com/asaskevich/govalidator"
 
 	"github.com/go-park-mail-ru/2018_2_DeadMolesStudio/database"
+	"github.com/go-park-mail-ru/2018_2_DeadMolesStudio/filesystem"
 	"github.com/go-park-mail-ru/2018_2_DeadMolesStudio/logger"
 	"github.com/go-park-mail-ru/2018_2_DeadMolesStudio/models"
 )
@@ -128,8 +129,8 @@ func ProfileHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// @Title Получить профиль
-// @Summary Получить профиль пользователя по ID, email или из сессии
+// @Summary Получить профиль
+// @Description Получить профиль пользователя по ID, никнейму или из сессии
 // @ID get-profile
 // @Produce json
 // @Param id query uint false "ID"
@@ -220,8 +221,8 @@ func getProfile(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// @Title Зарегистрироваться и залогиниться по новому профилю
-// @Summary Зарегистрировать по никнейму, почте и паролю и автоматически залогинить
+// @Summary Зарегистрироваться и залогиниться по новому профилю
+// @Description Зарегистрировать по никнейму, почте и паролю и автоматически залогинить
 // @ID post-profile
 // @Accept json
 // @Produce json
@@ -289,8 +290,8 @@ func postProfile(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// @Title Изменить профиль
-// @Summary Изменить профиль, должен быть залогинен
+// @Summary Изменить профиль
+// @Description Изменить профиль, должен быть залогинен
 // @ID put-profile
 // @Accept json
 // @Produce json
@@ -376,5 +377,95 @@ func putProfile(w http.ResponseWriter, r *http.Request) {
 }
 
 func AvatarHandler(w http.ResponseWriter, r *http.Request) {
-	return
+	switch r.Method {
+	case http.MethodPut:
+		putAvatar(w, r)
+	case http.MethodDelete:
+		deleteAvatar(w, r)
+	default:
+		w.WriteHeader(http.StatusMethodNotAllowed)
+	}
+}
+
+// @Summary Изменить аватар
+// @Description Загрузить или изменить уже существующий аватар
+// @ID put-avatar
+// @Accept multipart/form-data
+// @Success 200 "Удалена аватарка у пользователя"
+// @Failure 401 "Не залогинен"
+// @Failure 404 "Пользователь не найден"
+// @Failure 500 "Ошибка при парсинге, в бд, файловой системе"
+// @Router /profile/avatar [PUT]
+func putAvatar(w http.ResponseWriter, r *http.Request) {
+	if !r.Context().Value(keyIsAuthenticated).(bool) {
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+
+	err := r.ParseMultipartForm(5 * (1 << 20)) // 5 MB
+	if err != nil {
+		if err == http.ErrNotMultipart || err == http.ErrMissingBoundary {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		logger.Error(err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	avatar, fileHeader, err := r.FormFile("avatar")
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	defer avatar.Close()
+
+	uID := r.Context().Value(keyUserID).(uint)
+	filename := fileHeader.Filename
+	dir := "static/img/"
+	filename = filesystem.GetHashedNameForFile(uID, filename)
+	err = filesystem.SaveFile(avatar, dir, filename)
+	if err != nil {
+		logger.Error(err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	err = database.UploadAvatar(uID, "/"+dir+filename)
+	if err != nil {
+		switch err.(type) {
+		case *database.UserNotFoundError:
+			w.WriteHeader(http.StatusNotFound)
+		default:
+			logger.Error(err)
+			w.WriteHeader(http.StatusInternalServerError)
+		}
+		return
+	}
+}
+
+// @Summary Удалить аватар
+// @Description Удалить аватар, пользователь должен быть залогинен
+// @ID delete-avatar
+// @Success 200 "Удалена аватарка у пользователя"
+// @Failure 401 "Не залогинен"
+// @Failure 404 "Пользователь не найден"
+// @Failure 500 "Ошибка в бд"
+// @Router /profile/avatar [DELETE]
+func deleteAvatar(w http.ResponseWriter, r *http.Request) {
+	if !r.Context().Value(keyIsAuthenticated).(bool) {
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+
+	err := database.DeleteAvatar(r.Context().Value(keyUserID).(uint))
+	if err != nil {
+		switch err.(type) {
+		case *database.UserNotFoundError:
+			w.WriteHeader(http.StatusNotFound)
+		default:
+			logger.Error(err)
+			w.WriteHeader(http.StatusInternalServerError)
+		}
+		return
+	}
 }

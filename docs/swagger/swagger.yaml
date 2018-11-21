@@ -24,6 +24,8 @@ definitions:
     type: object
   models.Profile:
     properties:
+      avatar:
+        type: string
       draws:
         type: integer
       email:
@@ -99,8 +101,19 @@ info:
   title: The Ketnipz Game API
   version: "1.0"
 paths:
+  /game/ws:
+    get:
+      description: Инициализирует соединение для пользователя
+      operationId: get-game-ws
+      responses:
+        "101":
+          description: Switching Protocols
+        "400":
+          description: Нет нужных заголовков
+      summary: Начать игру по WebSocket
   /profile:
     get:
+      description: Получить профиль пользователя по ID, никнейму или из сессии
       operationId: get-profile
       parameters:
       - description: ID
@@ -127,10 +140,11 @@ paths:
           description: Не найдено
         "500":
           description: Ошибка в бд
-      summary: Получить профиль пользователя по ID, email или из сессии
+      summary: Получить профиль
     post:
       consumes:
       - application/json
+      description: Зарегистрировать по никнейму, почте и паролю и автоматически залогинить
       operationId: post-profile
       parameters:
       - description: Никнейм, почта и пароль
@@ -157,10 +171,11 @@ paths:
           description: При регистрации не все параметры
         "500":
           description: Ошибка в бд
-      summary: Зарегистрировать по никнейму, почте и паролю и автоматически залогинить
+      summary: Зарегистрироваться и залогиниться по новому профилю
     put:
       consumes:
       - application/json
+      description: Изменить профиль, должен быть залогинен
       operationId: put-profile
       parameters:
       - description: Новые никнейм, и/или почта, и/или пароль
@@ -187,9 +202,39 @@ paths:
             type: object
         "500":
           description: Ошибка в бд
-      summary: Изменить профиль, должен быть залогинен
+      summary: Изменить профиль
+  /profile/avatar:
+    delete:
+      description: Удалить аватар, пользователь должен быть залогинен
+      operationId: delete-avatar
+      responses:
+        "200":
+          description: Удалена аватарка у пользователя
+        "401":
+          description: Не залогинен
+        "404":
+          description: Пользователь не найден
+        "500":
+          description: Ошибка в бд
+      summary: Удалить аватар
+    put:
+      consumes:
+      - multipart/form-data
+      description: Загрузить или изменить уже существующий аватар
+      operationId: put-avatar
+      responses:
+        "200":
+          description: Удалена аватарка у пользователя
+        "401":
+          description: Не залогинен
+        "404":
+          description: Пользователь не найден
+        "500":
+          description: Ошибка при парсинге, в бд, файловой системе
+      summary: Изменить аватар
   /scoreboard:
     get:
+      description: Получить таблицу лидеров (пагинация присутствует)
       operationId: get-scoreboard
       parameters:
       - description: Пользователей на страницу
@@ -210,15 +255,16 @@ paths:
             type: object
         "500":
           description: Ошибка в бд
-      summary: Получить таблицу лидеров (пагинация присутствует)
+      summary: Получить таблицу лидеров
   /session:
     delete:
       operationId: delete-session
       responses:
         "200":
           description: Успешный выход / пользователь уже разлогинен
-      summary: Разлогинить пользователя (удалить сессию)
+      summary: Разлогинить
     get:
+      description: Получить сессию пользователя, если есть сессия, то она в куке session_id
       operationId: get-session
       produces:
       - application/json
@@ -232,10 +278,11 @@ paths:
           description: Не залогинен
         "500":
           description: Ошибка в бд
-      summary: Получить сессию пользователя, если есть сессия, то она в куке session_id
+      summary: Получить сессию
     post:
       consumes:
       - application/json
+      description: Залогинить пользователя (создать сессию)
       operationId: post-session
       parameters:
       - description: Почта и пароль
@@ -259,5 +306,27 @@ paths:
           description: Неверная пара пользователь/пароль
         "500":
           description: Внутренняя ошибка
-      summary: Залогинить пользователя (создать сессию)
+      summary: Залогинить
+  /static/{path/to/file}:
+    get:
+      description: Отдать файл с диска
+      operationId: get-static
+      parameters:
+      - description: Путь к файлу
+        in: path
+        name: PathToFile
+        required: true
+        type: string
+      responses:
+        "200":
+          description: Файл найден
+        "301":
+          description: Редирект, если имя папки не заканчивается на /
+        "403":
+          description: Нет прав (сервер)
+        "404":
+          description: Файл не найден
+        "500":
+          description: Внутренняя ошибка
+      summary: Отдать файл
 swagger: "2.0"

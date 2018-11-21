@@ -2,7 +2,8 @@ package models
 
 type Profile struct {
 	User
-	Nickname string `json:"nickname" example:"Nick"`
+	Nickname string  `json:"nickname" example:"Nick"`
+	Avatar   *string `json:"avatar,omitempty"`
 	Stats
 }
 
