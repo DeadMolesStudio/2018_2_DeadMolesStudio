@@ -1,7 +1,7 @@
 package database
 
 import (
-	"github.com/go-park-mail-ru/2018_2_DeadMolesStudio/models"
+	"api/models"
 )
 
 func GetUserPositionsDescendingPaginated(p *models.FetchScoreboardPage) (

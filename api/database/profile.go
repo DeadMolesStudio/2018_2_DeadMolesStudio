@@ -6,7 +6,7 @@ import (
 
 	"github.com/lib/pq"
 
-	"github.com/go-park-mail-ru/2018_2_DeadMolesStudio/models"
+	"api/models"
 )
 
 func GetUserPassword(e string) (models.User, error) {

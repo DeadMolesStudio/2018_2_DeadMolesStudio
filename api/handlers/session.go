@@ -6,14 +6,15 @@ import (
 	"io/ioutil"
 	"net/http"
 	"time"
-	
+
 	"github.com/asaskevich/govalidator"
-	"github.com/satori/go.uuid"
-	
-	"github.com/go-park-mail-ru/2018_2_DeadMolesStudio/database"
+
 	"github.com/go-park-mail-ru/2018_2_DeadMolesStudio/logger"
-	"github.com/go-park-mail-ru/2018_2_DeadMolesStudio/models"
-	"github.com/go-park-mail-ru/2018_2_DeadMolesStudio/sessions"
+	"github.com/go-park-mail-ru/2018_2_DeadMolesStudio/middleware"
+	"github.com/go-park-mail-ru/2018_2_DeadMolesStudio/session"
+
+	"api/database"
+	"api/models"
 )
 
 func cleanLoginInfo(r *http.Request, u *models.UserPassword) error {
@@ -32,18 +33,10 @@ func cleanLoginInfo(r *http.Request, u *models.UserPassword) error {
 }
 
 func loginUser(w http.ResponseWriter, userID uint) error {
-	sessionID := ""
-	for {
-		// create session, if collision ocquires, generate new sessionID
-		sessionID = uuid.NewV4().String()
-		success, err := sessions.Create(sessionID, userID)
-		if err != nil {
-			logger.Error(err)
-			return err
-		}
-		if success {
-			break
-		}
+	sessionID, err := session.Create(userID)
+	if err != nil {
+		logger.Error(err)
+		return err
 	}
 
 	cookie := http.Cookie{
@@ -80,8 +73,8 @@ func SessionHandler(w http.ResponseWriter, r *http.Request) {
 // @Failure 500 "Ошибка в бд"
 // @Router /session [GET]
 func getSession(w http.ResponseWriter, r *http.Request) {
-	if r.Context().Value(keyIsAuthenticated).(bool) {
-		sID, err := json.Marshal(models.Session{SessionID: r.Context().Value(keySessionID).(string)})
+	if r.Context().Value(middleware.KeyIsAuthenticated).(bool) {
+		sID, err := json.Marshal(models.Session{SessionID: r.Context().Value(middleware.KeySessionID).(string)})
 		if err != nil {
 			logger.Error(err)
 			w.WriteHeader(http.StatusInternalServerError)
@@ -107,7 +100,7 @@ func getSession(w http.ResponseWriter, r *http.Request) {
 // @Failure 500 "Внутренняя ошибка"
 // @Router /session [POST]
 func postSession(w http.ResponseWriter, r *http.Request) {
-	if r.Context().Value(keyIsAuthenticated).(bool) {
+	if r.Context().Value(middleware.KeyIsAuthenticated).(bool) {
 		// user has already logged in
 		return
 	}
@@ -159,11 +152,11 @@ func postSession(w http.ResponseWriter, r *http.Request) {
 // @Success 200 "Успешный выход / пользователь уже разлогинен"
 // @Router /session [DELETE]
 func deleteSession(w http.ResponseWriter, r *http.Request) {
-	if !r.Context().Value(keyIsAuthenticated).(bool) {
+	if !r.Context().Value(middleware.KeyIsAuthenticated).(bool) {
 		// user has already logged out
 		return
 	}
-	err := sessions.Delete(r.Context().Value(keySessionID).(string))
+	err := session.Delete(r.Context().Value(middleware.KeySessionID).(string))
 	if err != nil { // but we continue
 		logger.Error(err)
 	}

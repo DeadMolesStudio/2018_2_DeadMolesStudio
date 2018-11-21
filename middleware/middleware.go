@@ -1,4 +1,4 @@
-package handlers
+package middleware
 
 import (
 	"context"
@@ -7,15 +7,15 @@ import (
 	"time"
 
 	"github.com/go-park-mail-ru/2018_2_DeadMolesStudio/logger"
-	"github.com/go-park-mail-ru/2018_2_DeadMolesStudio/sessions"
+	"github.com/go-park-mail-ru/2018_2_DeadMolesStudio/session"
 )
 
 type key int
 
 const (
-	keyIsAuthenticated key = iota
-	keySessionID
-	keyUserID
+	KeyIsAuthenticated key = iota
+	KeySessionID
+	KeyUserID
 )
 
 func CORSMiddleware(next http.HandlerFunc) http.HandlerFunc {
@@ -40,24 +40,24 @@ func SessionMiddleware(next http.HandlerFunc) http.HandlerFunc {
 		ctx := r.Context()
 		c, err := r.Cookie("session_id")
 		if err == nil {
-			uid, err := sessions.Get(c.Value)
+			uid, err := session.Get(c.Value)
 			switch err {
 			case nil:
-				ctx = context.WithValue(ctx, keyIsAuthenticated, true)
-				ctx = context.WithValue(ctx, keySessionID, c.Value)
-				ctx = context.WithValue(ctx, keyUserID, uid)
-			case sessions.ErrKeyNotFound:
+				ctx = context.WithValue(ctx, KeyIsAuthenticated, true)
+				ctx = context.WithValue(ctx, KeySessionID, c.Value)
+				ctx = context.WithValue(ctx, KeyUserID, uid)
+			case session.ErrKeyNotFound:
 				// delete unvalid cookie
 				c.Expires = time.Now().AddDate(0, 0, -1)
 				http.SetCookie(w, c)
-				ctx = context.WithValue(ctx, keyIsAuthenticated, false)
+				ctx = context.WithValue(ctx, KeyIsAuthenticated, false)
 			default:
 				logger.Error(err)
 				w.WriteHeader(http.StatusInternalServerError)
 				return
 			}
 		} else { // ErrNoCookie
-			ctx = context.WithValue(ctx, keyIsAuthenticated, false)
+			ctx = context.WithValue(ctx, KeyIsAuthenticated, false)
 		}
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})

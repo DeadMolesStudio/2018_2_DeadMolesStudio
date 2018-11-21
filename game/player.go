@@ -1,8 +1,9 @@
-package game
+package main
 
 import (
-	"github.com/go-park-mail-ru/2018_2_DeadMolesStudio/logger"
 	"github.com/gorilla/websocket"
+	
+	"github.com/go-park-mail-ru/2018_2_DeadMolesStudio/logger"
 )
 
 type Player struct {

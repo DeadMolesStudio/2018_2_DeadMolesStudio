@@ -5,9 +5,10 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/go-park-mail-ru/2018_2_DeadMolesStudio/database"
 	"github.com/go-park-mail-ru/2018_2_DeadMolesStudio/logger"
-	"github.com/go-park-mail-ru/2018_2_DeadMolesStudio/models"
+
+	"api/database"
+	"api/models"
 )
 
 // @Summary Получить таблицу лидеров

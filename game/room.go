@@ -1,10 +1,11 @@
-package game
+package main
 
 import (
 	"time"
 
-	"github.com/go-park-mail-ru/2018_2_DeadMolesStudio/logger"
 	"github.com/satori/go.uuid"
+
+	"github.com/go-park-mail-ru/2018_2_DeadMolesStudio/logger"
 )
 
 const (

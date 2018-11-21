@@ -8,10 +8,12 @@ import (
 
 	"github.com/asaskevich/govalidator"
 
-	"github.com/go-park-mail-ru/2018_2_DeadMolesStudio/database"
-	"github.com/go-park-mail-ru/2018_2_DeadMolesStudio/filesystem"
 	"github.com/go-park-mail-ru/2018_2_DeadMolesStudio/logger"
-	"github.com/go-park-mail-ru/2018_2_DeadMolesStudio/models"
+	"github.com/go-park-mail-ru/2018_2_DeadMolesStudio/middleware"
+
+	"api/database"
+	"api/filesystem"
+	"api/models"
 )
 
 func cleanProfile(r *http.Request, p *models.RegisterProfile) error {
@@ -193,11 +195,11 @@ func getProfile(w http.ResponseWriter, r *http.Request) {
 		}
 		fmt.Fprintln(w, string(json))
 	} else {
-		if !r.Context().Value(keyIsAuthenticated).(bool) {
+		if !r.Context().Value(middleware.KeyIsAuthenticated).(bool) {
 			w.WriteHeader(http.StatusUnauthorized)
 			return
 		}
-		profile, err := database.GetUserProfileByID(r.Context().Value(keyUserID).(uint))
+		profile, err := database.GetUserProfileByID(r.Context().Value(middleware.KeyUserID).(uint))
 		if err != nil {
 			switch err.(type) {
 			case database.UserNotFoundError:
@@ -303,7 +305,7 @@ func postProfile(w http.ResponseWriter, r *http.Request) {
 // @Failure 500 "Ошибка в бд"
 // @Router /profile [PUT]
 func putProfile(w http.ResponseWriter, r *http.Request) {
-	if !r.Context().Value(keyIsAuthenticated).(bool) {
+	if !r.Context().Value(middleware.KeyIsAuthenticated).(bool) {
 		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
@@ -360,7 +362,7 @@ func putProfile(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusForbidden)
 		fmt.Fprintln(w, string(json))
 	} else {
-		id := r.Context().Value(keyUserID).(uint)
+		id := r.Context().Value(middleware.KeyUserID).(uint)
 		err := database.UpdateUserByID(id, u)
 		if err != nil {
 			switch err.(type) {
@@ -397,7 +399,7 @@ func AvatarHandler(w http.ResponseWriter, r *http.Request) {
 // @Failure 500 "Ошибка при парсинге, в бд, файловой системе"
 // @Router /profile/avatar [PUT]
 func putAvatar(w http.ResponseWriter, r *http.Request) {
-	if !r.Context().Value(keyIsAuthenticated).(bool) {
+	if !r.Context().Value(middleware.KeyIsAuthenticated).(bool) {
 		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
@@ -419,7 +421,7 @@ func putAvatar(w http.ResponseWriter, r *http.Request) {
 	}
 	defer avatar.Close()
 
-	uID := r.Context().Value(keyUserID).(uint)
+	uID := r.Context().Value(middleware.KeyUserID).(uint)
 	filename := fileHeader.Filename
 	dir := "static/img/"
 	filename = filesystem.GetHashedNameForFile(uID, filename)
@@ -452,12 +454,12 @@ func putAvatar(w http.ResponseWriter, r *http.Request) {
 // @Failure 500 "Ошибка в бд"
 // @Router /profile/avatar [DELETE]
 func deleteAvatar(w http.ResponseWriter, r *http.Request) {
-	if !r.Context().Value(keyIsAuthenticated).(bool) {
+	if !r.Context().Value(middleware.KeyIsAuthenticated).(bool) {
 		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
 
-	err := database.DeleteAvatar(r.Context().Value(keyUserID).(uint))
+	err := database.DeleteAvatar(r.Context().Value(middleware.KeyUserID).(uint))
 	if err != nil {
 		switch err.(type) {
 		case *database.UserNotFoundError:

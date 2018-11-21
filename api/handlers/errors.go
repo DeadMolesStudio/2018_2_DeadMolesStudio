@@ -6,7 +6,8 @@ import (
 	"net/http"
 
 	"github.com/go-park-mail-ru/2018_2_DeadMolesStudio/logger"
-	"github.com/go-park-mail-ru/2018_2_DeadMolesStudio/models"
+
+	"api/models"
 )
 
 type ParseJSONError struct {
