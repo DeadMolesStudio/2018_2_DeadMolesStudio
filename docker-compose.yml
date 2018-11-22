@@ -1,0 +1,24 @@
+version: "3"
+services:
+
+  api-service:
+    image: deadmolesstudio/ketnipz-api-service
+    container_name: dmstudio-server
+    depends_on: 
+      - auth-service
+
+  auth-service:
+    image: deadmolesstudio/ketnipz-auth-service
+    container_name: auth-service
+
+  game-service:
+    image: deadmolesstudio/ketnipz-game-service
+    container_name: game-service
+    depends_on: 
+      - auth-service
+
+# external network with nginx, databases
+networks:
+  default:
+    external:
+      name: ketnipz-net
