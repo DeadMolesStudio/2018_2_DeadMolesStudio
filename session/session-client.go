@@ -5,6 +5,7 @@ import (
 	"time"
 
 	grpc "google.golang.org/grpc"
+	"google.golang.org/grpc/status"
 
 	"github.com/go-park-mail-ru/2018_2_DeadMolesStudio/logger"
 )
@@ -48,6 +49,10 @@ func Get(sID string) (uint, error) {
 		&SessionID{UUID: sID},
 	)
 	if err != nil {
+		s, _ := status.FromError(err)
+		if s.Message() == ErrKeyNotFound.Error() {
+			return 0, ErrKeyNotFound
+		}
 		return 0, err
 	}
 	return uint(s.UID), nil
