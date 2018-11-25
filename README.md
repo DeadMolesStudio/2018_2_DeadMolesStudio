@@ -11,6 +11,7 @@
 - [API к фронтенду](https://github.com/DeadMolesStudio/ketnipz-api-service)
 - [Авторизация по сессии](https://github.com/DeadMolesStudio/ketnipz-auth-service)
 - [Игра](https://github.com/DeadMolesStudio/ketnipz-game-service)
+- [Чат](https://github.com/DeadMolesStudio/ketnipz-chat-service)
 
 ## Ссылки проекта
 
