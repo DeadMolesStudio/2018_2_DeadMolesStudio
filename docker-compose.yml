@@ -17,6 +17,12 @@ services:
     depends_on: 
       - auth-service
 
+  game-service:
+    image: deadmolesstudio/ketnipz-chat-service
+    container_name: chat-service
+    depends_on: 
+      - auth-service
+
 # external network with nginx, databases
 networks:
   default:
