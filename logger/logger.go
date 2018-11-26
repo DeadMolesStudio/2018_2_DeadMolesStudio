@@ -47,11 +47,11 @@ func Debug(args ...interface{}) {
 }
 
 func Debugf(template string, args ...interface{}) {
-	sugar.Infof(template, args...)
+	sugar.Debugf(template, args...)
 }
 
 func Debugw(msg string, keysAndValues ...interface{}) {
-	sugar.Infow(msg, keysAndValues...)
+	sugar.Debugw(msg, keysAndValues...)
 }
 
 func Error(args ...interface{}) {
