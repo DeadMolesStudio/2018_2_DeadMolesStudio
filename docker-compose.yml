@@ -17,11 +17,47 @@ services:
     depends_on: 
       - auth-service
 
-  game-service:
-    image: deadmolesstudio/ketnipz-chat-service
-    container_name: chat-service
-    depends_on: 
-      - auth-service
+  prometheus:
+    image: quay.io/prometheus/prometheus
+    container_name: prometheus
+    volumes:
+      - "./prometheus:/etc/prometheus/"
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+    ports: 
+      - "9090:9090"
+
+  node_exporter:
+    image: quay.io/prometheus/node-exporter 
+    container_name: node_exporter
+    user: root
+    privileged: true
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    command:
+      - '--path.procfs=/host/proc'
+      - '--path.sysfs=/host/sys'
+      - '--collector.filesystem.ignored-mount-points=^/(sys|proc|dev|host|etc)($$|/)'
+
+  grafana:
+    image: grafana/grafana
+    container_name: grafana
+    volumes:
+      - grafana_data:/var/lib/grafana
+    environment:
+      - GF_SECURITY_ADMIN_USER=${ADMIN_USER:-admin}
+      - GF_SECURITY_ADMIN_PASSWORD=${ADMIN_PASSWORD:-admin}
+      - GF_USERS_ALLOW_SIGN_UP=false
+    ports:
+      - 3000:3000
+
+volumes:
+  prometheus_data:
+  grafana_data:
 
 # external network with nginx, databases
 networks:
