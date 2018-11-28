@@ -35,12 +35,13 @@ func CORSMiddleware(next http.HandlerFunc) http.HandlerFunc {
 	})
 }
 
-func SessionMiddleware(next http.HandlerFunc) http.HandlerFunc {
+func SessionMiddleware(next http.HandlerFunc, sm *session.SessionManager) http.HandlerFunc {
+	// middleware
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 		c, err := r.Cookie("session_id")
 		if err == nil {
-			uid, err := session.Get(c.Value)
+			uid, err := sm.Get(c.Value)
 			switch err {
 			case nil:
 				ctx = context.WithValue(ctx, KeyIsAuthenticated, true)
