@@ -17,6 +17,12 @@ services:
     depends_on: 
       - auth-service
 
+  chat-service:
+    image: deadmolesstudio/ketnipz-chat-service
+    container_name: chat-service
+    depends_on: 
+      - auth-service
+
   prometheus:
     image: quay.io/prometheus/prometheus
     container_name: prometheus
