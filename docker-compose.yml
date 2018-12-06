@@ -4,6 +4,8 @@ services:
   api-service:
     image: deadmolesstudio/ketnipz-api-service
     container_name: dmstudio-server
+    volumes:
+      - /opt/dmstudio/static:/app/static
     depends_on: 
       - auth-service
 
