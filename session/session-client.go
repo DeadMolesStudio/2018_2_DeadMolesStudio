@@ -10,6 +10,7 @@ import (
 	"github.com/go-park-mail-ru/2018_2_DeadMolesStudio/logger"
 )
 
+// nolint: golint
 type SessionManager struct {
 	smc      SessionManagerClient
 	grpcConn *grpc.ClientConn
@@ -20,7 +21,7 @@ func ConnectSessionManager() *SessionManager {
 		"auth-service:8081",
 		grpc.WithInsecure(),
 		grpc.WithBlock(),
-		grpc.WithTimeout(30*time.Second),
+		grpc.WithTimeout(30*time.Second), // nolint: megacheck
 	)
 	if err != nil {
 		logger.Panic("failed to connect to sessionManager: ", err)
