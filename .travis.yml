@@ -1,0 +1,31 @@
+language: go
+go:
+- "1.11.4"
+
+branches:
+  only:
+  - master
+
+env:
+  - GO111MODULE=on
+
+sudo: required
+
+before_script:
+- curl -sfL https://install.goreleaser.com/github.com/golangci/golangci-lint.sh | sh -s -- -b $GOPATH/bin v1.12.3
+- ssh-keyscan -H $DEPLOY_SSH_ADDRESS >> ~/.ssh/known_hosts
+- chmod 600 ~/.ssh/2018_2_DeadMolesStudio_id_rsa.pem
+
+script:
+- golangci-lint -v run
+- scp -i ~/.ssh/2018_2_DeadMolesStudio_id_rsa.pem ./docker-compose.yml root@$DEPLOY_SSH_ADDRESS:/opt/dmstudio/common/docker-compose.yml
+- ssh -i ~/.ssh/2018_2_DeadMolesStudio_id_rsa.pem root@$DEPLOY_SSH_ADDRESS ' 
+  cd /opt/dmstudio/common; 
+  docker-compose up -d'
+
+before_install:
+- openssl aes-256-cbc -K $encrypted_0cbe582880d9_key -iv $encrypted_0cbe582880d9_iv
+  -in 2018_2_DeadMolesStudio_id_rsa.pem.enc -out ~/.ssh/2018_2_DeadMolesStudio_id_rsa.pem
+  -d
+
+install: true # skip base installation
