@@ -1,3 +1,6 @@
+# env files (secrets)
+*.env
+
 # Static
 static/
 

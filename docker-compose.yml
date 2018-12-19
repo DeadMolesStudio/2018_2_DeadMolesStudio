@@ -8,22 +8,30 @@ services:
       - /opt/dmstudio/static:/app/static
     depends_on: 
       - auth-service
+    env_file:
+      - api.env
 
   auth-service:
     image: deadmolesstudio/ketnipz-auth-service
     container_name: auth-service
+    env_file:
+      - auth.env
 
   game-service:
     image: deadmolesstudio/ketnipz-game-service
     container_name: game-service
     depends_on: 
       - auth-service
+    env_file:
+      - game.env
 
   chat-service:
     image: deadmolesstudio/ketnipz-chat-service
     container_name: chat-service
     depends_on: 
       - auth-service
+    env_file:
+      - chat.env
 
   prometheus:
     image: quay.io/prometheus/prometheus
