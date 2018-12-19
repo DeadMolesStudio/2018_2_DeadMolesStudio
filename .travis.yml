@@ -18,7 +18,8 @@ before_script:
 
 script:
 - golangci-lint -v run
-- scp -i ~/.ssh/2018_2_DeadMolesStudio_id_rsa.pem ./docker-compose.yml root@$DEPLOY_SSH_ADDRESS:/opt/dmstudio/common/docker-compose.yml
+- scp -i ~/.ssh/2018_2_DeadMolesStudio_id_rsa.pem -r ./docker-compose.yml grafana prometheus 
+  root@$DEPLOY_SSH_ADDRESS:/opt/dmstudio/common/
 - ssh -i ~/.ssh/2018_2_DeadMolesStudio_id_rsa.pem root@$DEPLOY_SSH_ADDRESS ' 
   cd /opt/dmstudio/common; 
   docker-compose up -d'
